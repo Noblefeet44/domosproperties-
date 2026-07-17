@@ -3,43 +3,44 @@ import { NextResponse } from "next/server";
 export async function POST(request: Request) {
   try {
     const data = await request.formData();
-    const file = data.get("file") as File | null;
+    const files = data.getAll("files") as File[];
 
-    if (!file) {
-      return NextResponse.json({ error: "No file uploaded" }, { status: 400 });
+    // Fallback if client sent single "file" field
+    if (files.length === 0) {
+      const file = data.get("file") as File | null;
+      if (file) {
+        files.push(file);
+      }
     }
 
-    // Prepare FormData for tmpfiles.org
-    const forwardFormData = new FormData();
-    forwardFormData.append("file", file);
+    if (files.length === 0) {
+      return NextResponse.json({ error: "No files uploaded" }, { status: 400 });
+    }
 
-    const uploadRes = await fetch("https://tmpfiles.org/api/v1/upload", {
-      method: "POST",
-      body: forwardFormData,
+    // Limit to 10 files max
+    const targetFiles = files.slice(0, 10);
+
+    const uploadPromises = targetFiles.map(async (file) => {
+      const catboxForm = new FormData();
+      catboxForm.append("reqtype", "fileupload");
+      catboxForm.append("fileToUpload", file);
+
+      const response = await fetch("https://catbox.moe/user/api.php", {
+        method: "POST",
+        body: catboxForm,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Upload failed for ${file.name}`);
+      }
+
+      const fileUrl = await response.text();
+      return fileUrl.trim();
     });
 
-    if (!uploadRes.ok) {
-      const errText = await uploadRes.text();
-      throw new Error(`Upload server error: ${errText}`);
-    }
+    const urls = await Promise.all(uploadPromises);
 
-    const uploadData = (await uploadRes.json()) as {
-      status: string;
-      data?: {
-        url?: string;
-      };
-    };
-
-    if (uploadData.status !== "success" || !uploadData.data?.url) {
-      throw new Error("Invalid upload response from host");
-    }
-
-    const originalUrl = uploadData.data.url;
-    // tmpfiles.org URL format: https://tmpfiles.org/12345/filename.ext
-    // Direct link format: https://tmpfiles.org/dl/12345/filename.ext
-    const directUrl = originalUrl.replace("https://tmpfiles.org/", "https://tmpfiles.org/dl/");
-
-    return NextResponse.json({ url: directUrl, success: true });
+    return NextResponse.json({ urls, success: true });
   } catch (error: unknown) {
     const err = error as Error;
     console.error("Upload API error:", err);

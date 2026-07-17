@@ -55,6 +55,8 @@ export const PropertyDetailsModal: React.FC = () => {
   const [paymentProcessing, setPaymentProcessing] = useState(false);
   const [bookingId, setBookingId] = useState("");
 
+  const [selectedImageIdx, setSelectedImageIdx] = useState(0);
+
   // Set default dates (today and tomorrow)
   useEffect(() => {
     if (selectedProperty) {
@@ -70,6 +72,7 @@ export const PropertyDetailsModal: React.FC = () => {
       setGuestPhone("");
       setStep("details");
       setActiveTab("overview");
+      setSelectedImageIdx(0);
     }
   }, [selectedProperty]);
 
@@ -204,9 +207,9 @@ Please confirm availability and booking details. Thank you!`;
             <div className="grid grid-cols-1 md:grid-cols-12">
               {/* Left Column: Image, Details & Reviews Tabs */}
               <div className="p-6 md:p-8 md:col-span-7 border-b md:border-b-0 md:border-r border-stone-200/60 dark:border-zinc-800/60">
-                <div className="relative h-60 w-full rounded-2xl overflow-hidden mb-6 shadow-sm">
+                <div className="relative h-60 w-full rounded-2xl overflow-hidden mb-3 shadow-sm">
                   <img
-                    src={selectedProperty.images[0]}
+                    src={selectedProperty.images[selectedImageIdx] || selectedProperty.images[0] || "/images/maitama.png"}
                     alt={selectedProperty.title}
                     className="w-full h-full object-cover"
                   />
@@ -218,6 +221,26 @@ Please confirm availability and booking details. Thank you!`;
                     <h3 className="text-base font-bold mt-2">{selectedProperty.location}</h3>
                   </div>
                 </div>
+
+                {/* Image Thumbnails Gallery */}
+                {selectedProperty.images && selectedProperty.images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-stone-200 dark:scrollbar-thumb-zinc-800 mb-5">
+                    {selectedProperty.images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedImageIdx(idx)}
+                        className={`relative w-16 h-12 rounded-lg overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
+                          selectedImageIdx === idx 
+                            ? "border-gold scale-95 shadow-xs" 
+                            : "border-transparent opacity-75 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={img} alt="" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
 
                 {/* Tab Controls */}
                 <div className="flex gap-4 border-b border-stone-200/40 dark:border-zinc-800/40 mb-5">

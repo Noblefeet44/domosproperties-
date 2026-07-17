@@ -28,8 +28,8 @@ export default function AdminPage() {
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
   
-  // Custom uploaded image URL
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
+  // Custom uploaded image URLs
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
 
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
@@ -83,12 +83,20 @@ export default function AdminPage() {
   };
 
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const totalCount = uploadedImageUrls.length + files.length;
+    if (totalCount > 10) {
+      alert("You can upload a maximum of 10 images per listing.");
+      return;
+    }
 
     setUploading(true);
     const formData = new FormData();
-    formData.append("file", file);
+    for (let i = 0; i < files.length; i++) {
+      formData.append("files", files[i]);
+    }
 
     try {
       const response = await fetch("/api/upload", {
@@ -101,9 +109,9 @@ export default function AdminPage() {
       }
 
       const data = await response.json();
-      if (data.url) {
-        setUploadedImageUrl(data.url);
-        setNotification("Custom image uploaded successfully!");
+      if (Array.isArray(data.urls)) {
+        setUploadedImageUrls((prev) => [...prev, ...data.urls]);
+        setNotification(`${data.urls.length} image(s) uploaded successfully!`);
         setTimeout(() => setNotification(""), 2500);
       }
     } catch (err) {
@@ -126,8 +134,8 @@ export default function AdminPage() {
     setGuests(property.guests);
     setSelectedAmenities(property.amenities);
 
-    // Load existing property image
-    setUploadedImageUrl(property.images[0] || "");
+    // Load existing property images
+    setUploadedImageUrls(property.images || []);
 
     setActiveTab("add-new");
   };
@@ -142,7 +150,7 @@ export default function AdminPage() {
     setBedrooms(1);
     setBathrooms(1);
     setGuests(2);
-    setUploadedImageUrl("");
+    setUploadedImageUrls([]);
     setSelectedAmenities([]);
   };
 
@@ -153,8 +161,8 @@ export default function AdminPage() {
       return;
     }
 
-    if (!uploadedImageUrl) {
-      alert("Please upload a showcase image file for your apartment.");
+    if (uploadedImageUrls.length === 0) {
+      alert("Please upload at least one showcase image file for your apartment.");
       return;
     }
 
@@ -169,7 +177,7 @@ export default function AdminPage() {
         bedrooms,
         bathrooms,
         guests,
-        images: [uploadedImageUrl],
+        images: uploadedImageUrls,
         amenities: selectedAmenities,
       });
       setNotification("Listing successfully updated!");
@@ -184,7 +192,7 @@ export default function AdminPage() {
         bedrooms,
         bathrooms,
         guests,
-        images: [uploadedImageUrl],
+        images: uploadedImageUrls,
         amenities: selectedAmenities,
       });
       setNotification("Listing successfully created and published!");
@@ -555,44 +563,83 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Showcase Photo upload section */}
+              {/* Showcase Photos upload section */}
               <div>
-                <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-2">
-                  Showcase Photo
-                </label>
-
-                {uploadedImageUrl ? (
-                  <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-stone-100/50 dark:bg-zinc-900/10 p-2 max-w-lg">
-                    <img
-                      src={uploadedImageUrl}
-                      alt="Showcase preview"
-                      className="w-full h-48 object-cover rounded-xl"
-                    />
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase">
+                    Apartment Showcase Photos ({uploadedImageUrls.length}/10)
+                  </label>
+                  {uploadedImageUrls.length > 0 && (
                     <button
                       type="button"
-                      onClick={() => setUploadedImageUrl("")}
-                      className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold transition-all shadow-md cursor-pointer"
+                      onClick={() => setUploadedImageUrls([])}
+                      className="text-[10px] font-bold text-red-500 hover:underline"
                     >
-                      ✕ Remove Photo
+                      Clear All Photos
                     </button>
+                  )}
+                </div>
+
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  ref={fileInputRef}
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+
+                {uploadedImageUrls.length > 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3 border border-stone-200 dark:border-zinc-850 rounded-2xl bg-stone-50/20 dark:bg-zinc-900/10">
+                    {uploadedImageUrls.map((url, index) => (
+                      <div key={index} className="relative aspect-video sm:aspect-square rounded-xl overflow-hidden group border border-stone-200 dark:border-zinc-800">
+                        <img
+                          src={url}
+                          alt={`Showcase ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUploadedImageUrls((prev) => prev.filter((_, idx) => idx !== index));
+                          }}
+                          className="absolute top-1.5 right-1.5 w-5 h-5 rounded-full bg-red-500 hover:bg-red-600 text-white flex items-center justify-center text-[10px] font-bold shadow-md cursor-pointer transition-colors"
+                          title="Remove photo"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+
+                    {/* Add More button inside grid if less than 10 */}
+                    {uploadedImageUrls.length < 10 && (
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={uploading}
+                        className="aspect-video sm:aspect-square rounded-xl border-2 border-dashed border-stone-200 dark:border-zinc-850 hover:border-gold dark:hover:border-gold flex flex-col items-center justify-center gap-1 hover:bg-stone-100/50 dark:hover:bg-zinc-900/30 cursor-pointer transition-all disabled:opacity-50"
+                      >
+                        <span className="text-lg text-stone-400 dark:text-zinc-500">+</span>
+                        <span className="text-[9px] font-bold text-stone-500 dark:text-zinc-400">
+                          {uploading ? "Uploading..." : "Add Photo"}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-stone-200 dark:border-zinc-850 hover:border-gold dark:hover:border-gold rounded-2xl bg-stone-50/30 dark:bg-zinc-900/10 cursor-pointer transition-colors"
                   >
-                    <input
-                      type="file"
-                      accept="image/*"
-                      ref={fileInputRef}
-                      onChange={handleImageUpload}
-                      className="hidden"
-                    />
                     <div className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-900 flex items-center justify-center text-base shadow-sm mb-3">
                       📷
                     </div>
-                    <p className="text-xs font-bold">{uploading ? "Uploading..." : "Click to upload showcase image"}</p>
-                    <p className="text-[9px] text-stone-400 mt-1">Supported formats: JPG, PNG. Image will host permanently on Airtable.</p>
+                    <p className="text-xs font-bold">
+                      {uploading ? "Uploading images..." : "Click to upload up to 10 photos"}
+                    </p>
+                    <p className="text-[9px] text-stone-400 mt-1">
+                      Drag & drop or select multiple files. Images will host permanently on Airtable.
+                    </p>
                   </div>
                 )}
               </div>
