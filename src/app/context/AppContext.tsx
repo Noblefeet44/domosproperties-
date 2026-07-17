@@ -41,6 +41,7 @@ interface AppContextType {
   darkMode: boolean;
   addProperty: (property: Omit<Property, "id" | "rating" | "reviewsCount" | "featured" | "reviews"> & { images: string[] }) => void;
   deleteProperty: (propertyId: string) => void;
+  updateProperty: (propertyId: string, property: Partial<Property> & { images?: string[] }) => Promise<void>;
   addBooking: (booking: Omit<Reservation, "id" | "bookingDate" | "status">) => void;
   cancelBooking: (bookingId: string) => void;
   toggleWishlist: (propertyId: string) => void;
@@ -189,6 +190,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         localStorage.setItem("abuja_properties", JSON.stringify(updated));
         return updated;
       });
+    }
+  };
+
+  const updateProperty = async (propertyId: string, updatedFields: Partial<Property> & { images?: string[] }) => {
+    // 1. Optimistic UI update
+    setProperties((prev) =>
+      prev.map((p) => (p.id === propertyId ? ({ ...p, ...updatedFields } as Property) : p))
+    );
+
+    // 2. Persist to Airtable
+    try {
+      const response = await fetch("/api/properties", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: propertyId, ...updatedFields }),
+      });
+      if (response.ok) {
+        await refreshProperties();
+      }
+    } catch (err) {
+      console.error("Failed to update property in Airtable, kept locally:", err);
     }
   };
 
@@ -349,6 +371,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         darkMode,
         addProperty,
         deleteProperty,
+        updateProperty,
         addBooking,
         cancelBooking,
         toggleWishlist,

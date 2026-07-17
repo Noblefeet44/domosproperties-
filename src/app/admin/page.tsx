@@ -1,17 +1,24 @@
 "use client";
-
-import React, { useState } from "react";
+/* eslint-disable react-hooks/set-state-in-effect */
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 
 export default function AdminPage() {
-  const { properties, addProperty, deleteProperty, bookings, darkMode, toggleDarkMode } = useApp();
+  const { properties, addProperty, deleteProperty, updateProperty, bookings, darkMode, toggleDarkMode } = useApp();
+
+  // Authentication State
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [passwordError, setPasswordError] = useState(false);
+  const [shake, setShake] = useState(false);
 
   // Active sub-view in admin
   const [activeTab, setActiveTab] = useState<"listings" | "add-new" | "bookings">("listings");
 
-  // Form states for adding property
+  // Form states for adding/editing property
+  const [editingPropertyId, setEditingPropertyId] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
@@ -20,9 +27,15 @@ export default function AdminPage() {
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
-  const [imageStyle, setImageStyle] = useState<"maitama" | "jabi" | "wuse" | "asokoro">("maitama");
+  
+  // Custom uploaded image or preset selection
+  const [imageStyle, setImageStyle] = useState<"maitama" | "jabi" | "wuse" | "asokoro" | "custom">("maitama");
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
+  const [uploading, setUploading] = useState(false);
+
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
   const [notification, setNotification] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableAmenities = [
     "Private Pool",
@@ -35,6 +48,27 @@ export default function AdminPage() {
     "Fully Equipped Gym",
     "Outdoor Lounge"
   ];
+
+  // Load authentication status on mount
+  useEffect(() => {
+    const auth = sessionStorage.getItem("abuja_admin_auth");
+    if (auth === "true") {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLoginSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordInput === "Admin@password") {
+      sessionStorage.setItem("abuja_admin_auth", "true");
+      setIsAuthenticated(true);
+      setPasswordError(false);
+    } else {
+      setPasswordError(true);
+      setShake(true);
+      setTimeout(() => setShake(false), 500);
+    }
+  };
 
   // Calculate earnings and counts
   const totalHostApartments = properties.length;
@@ -49,48 +83,206 @@ export default function AdminPage() {
     );
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      const data = await response.json();
+      if (data.url) {
+        setUploadedImageUrl(data.url);
+        setImageStyle("custom");
+        setNotification("Custom image uploaded successfully!");
+        setTimeout(() => setNotification(""), 2500);
+      }
+    } catch (err) {
+      console.error(err);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const startEdit = (property: Property) => {
+    setEditingPropertyId(property.id);
+    setTitle(property.title);
+    setDescription(property.description);
+    setPrice(property.price.toString());
+    setLocation(property.location);
+    setNeighborhood(property.neighborhood);
+    setBedrooms(property.bedrooms);
+    setBathrooms(property.bathrooms);
+    setGuests(property.guests);
+    setSelectedAmenities(property.amenities);
+
+    // Determine if using custom or preset image
+    const firstImg = property.images[0] || "";
+    if (firstImg.startsWith("http")) {
+      setUploadedImageUrl(firstImg);
+      setImageStyle("custom");
+    } else {
+      const match = firstImg.match(/\/images\/(maitama|jabi|wuse|asokoro)\.png/);
+      if (match && match[1]) {
+        setImageStyle(match[1] as "maitama" | "jabi" | "wuse" | "asokoro");
+      } else {
+        setUploadedImageUrl(firstImg);
+        setImageStyle("custom");
+      }
+    }
+
+    setActiveTab("add-new");
+  };
+
+  const resetForm = () => {
+    setEditingPropertyId(null);
+    setTitle("");
+    setDescription("");
+    setPrice("");
+    setLocation("");
+    setNeighborhood("Maitama");
+    setBedrooms(1);
+    setBathrooms(1);
+    setGuests(2);
+    setImageStyle("maitama");
+    setUploadedImageUrl("");
+    setSelectedAmenities([]);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !description || !price || !location) {
       alert("Please fill in all details.");
       return;
     }
 
-    const imagePath = `/images/${imageStyle}.png`;
+    const finalImage = imageStyle === "custom" ? uploadedImageUrl : `/images/${imageStyle}.png`;
+    if (imageStyle === "custom" && !uploadedImageUrl) {
+      alert("Please upload a custom image or select one of the presets.");
+      return;
+    }
 
-    addProperty({
-      title,
-      description,
-      price: parseInt(price),
-      location,
-      neighborhood,
-      bedrooms,
-      bathrooms,
-      guests,
-      images: [imagePath],
-      amenities: selectedAmenities,
-    });
+    if (editingPropertyId) {
+      // Edit Mode
+      await updateProperty(editingPropertyId, {
+        title,
+        description,
+        price: parseInt(price),
+        location,
+        neighborhood,
+        bedrooms,
+        bathrooms,
+        guests,
+        images: [finalImage],
+        amenities: selectedAmenities,
+      });
+      setNotification("Listing successfully updated!");
+    } else {
+      // Create Mode
+      addProperty({
+        title,
+        description,
+        price: parseInt(price),
+        location,
+        neighborhood,
+        bedrooms,
+        bathrooms,
+        guests,
+        images: [finalImage],
+        amenities: selectedAmenities,
+      });
+      setNotification("Listing successfully created and published!");
+    }
 
-    // Reset Form
-    setTitle("");
-    setDescription("");
-    setPrice("");
-    setLocation("");
-    setSelectedAmenities([]);
-    setNotification("Listing successfully created and published!");
-    
-    // Switch to listings tab to view new property
+    // Clear and redirect
+    resetForm();
     setTimeout(() => {
       setNotification("");
       setActiveTab("listings");
     }, 1500);
   };
 
-  const handleDelete = (propertyId: string, title: string) => {
-    if (confirm(`Are you sure you want to delete the listing "${title}"?`)) {
+  const handleDelete = (propertyId: string, titleStr: string) => {
+    if (confirm(`Are you sure you want to delete the listing "${titleStr}"?`)) {
       deleteProperty(propertyId);
     }
   };
+
+  // Lock Screen Render
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-stone-900 dark:text-zinc-50 flex items-center justify-center p-4 transition-colors duration-300">
+        <div 
+          className={`w-full max-w-md p-8 glass rounded-3xl border border-stone-200/60 dark:border-zinc-850 shadow-xl transition-all ${
+            shake ? "animate-bounce" : ""
+          }`}
+        >
+          <div className="flex flex-col items-center mb-6">
+            <div className="w-12 h-12 rounded-2xl gold-bg-gradient flex items-center justify-center text-white text-xl font-bold shadow-md mb-3">
+              🔒
+            </div>
+            <h1 className="text-lg font-extrabold tracking-wider uppercase text-stone-850 dark:text-zinc-200">
+              Abuja<span className="gold-gradient-text">Shortlet</span>
+            </h1>
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest leading-none mt-1">Admin Workspace Lock</p>
+          </div>
+
+          <form onSubmit={handleLoginSubmit} className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-bold text-stone-400 dark:text-zinc-500 uppercase tracking-wider mb-1.5">
+                Enter Password
+              </label>
+              <input
+                type="password"
+                placeholder="••••••••"
+                value={passwordInput}
+                onChange={(e) => {
+                  setPasswordInput(e.target.value);
+                  setPasswordError(false);
+                }}
+                className={`w-full px-4 py-3 text-xs rounded-xl border bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold ${
+                  passwordError 
+                    ? "border-red-500 text-red-900 dark:text-red-400" 
+                    : "border-stone-200 dark:border-zinc-800"
+                }`}
+                required
+              />
+              {passwordError && (
+                <span className="text-[9px] font-bold text-red-500 mt-1 block">
+                  ✗ Incorrect password. Please try again.
+                </span>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              className="w-full py-3 rounded-xl bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 hover:bg-gold hover:text-white dark:hover:bg-gold dark:hover:text-white font-bold text-xs transition-colors shadow-md cursor-pointer"
+            >
+              Unlock Workspace
+            </button>
+          </form>
+
+          <div className="mt-6 text-center border-t border-stone-200/40 dark:border-zinc-850 pt-4">
+            <Link href="/" className="text-xs font-semibold text-stone-450 hover:text-gold transition-colors">
+              🏠 Return to Explore Site
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-zinc-950 text-stone-900 dark:text-zinc-50 flex flex-col font-sans transition-colors duration-300">
@@ -176,7 +368,7 @@ export default function AdminPage() {
                 : "border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300"
             }`}
           >
-            ➕ List New Shortlet
+            {editingPropertyId ? "✏️ Edit Apartment" : "➕ List New Shortlet"}
           </button>
           <button
             onClick={() => setActiveTab("bookings")}
@@ -222,12 +414,20 @@ export default function AdminPage() {
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => handleDelete(property.id, property.title)}
-                      className="px-4 py-2 border border-red-500/20 hover:border-red-500 bg-red-500/5 text-red-500 text-xs font-bold rounded-xl transition-all cursor-pointer"
-                    >
-                      Delete Listing
-                    </button>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => startEdit(property)}
+                        className="px-4 py-2 border border-stone-200 dark:border-zinc-800 hover:bg-stone-100 dark:hover:bg-zinc-900 text-stone-600 dark:text-zinc-300 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        Edit Listing
+                      </button>
+                      <button
+                        onClick={() => handleDelete(property.id, property.title)}
+                        className="px-4 py-2 border border-red-500/20 hover:border-red-500 bg-red-500/5 text-red-500 text-xs font-bold rounded-xl transition-all cursor-pointer"
+                      >
+                        Delete Listing
+                      </button>
+                    </div>
                   </div>
                 ))
               )}
@@ -238,7 +438,24 @@ export default function AdminPage() {
         {/* Tab 2: Listing Form */}
         {activeTab === "add-new" && (
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 max-w-2xl">
-            <h2 className="text-base font-bold mb-4">List New Shortlet Apartment</h2>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-base font-bold">
+                {editingPropertyId ? `Edit Apartment: ${title}` : "List New Shortlet Apartment"}
+              </h2>
+              {editingPropertyId && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetForm();
+                    setActiveTab("listings");
+                  }}
+                  className="text-xs font-bold text-red-500 hover:underline"
+                >
+                  Cancel Edit
+                </button>
+              )}
+            </div>
+            
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
@@ -354,17 +571,43 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Photo Style Selection */}
+              {/* Showcase Photo upload or preset style selection */}
               <div>
                 <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-2">
-                  Select Showcase Photo Style
+                  Select Showcase Photo Style or Upload Image
                 </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                
+                {/* Upload Section */}
+                <div className="mb-4 flex flex-col sm:flex-row gap-4 items-center p-4 border border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl bg-stone-50/30 dark:bg-zinc-900/10">
+                  <div className="text-center sm:text-left flex-1">
+                    <p className="text-xs font-bold">Upload Custom Property Image</p>
+                    <p className="text-[10px] text-stone-400">Supported formats: JPG, PNG. Image will host permanently on Airtable.</p>
+                  </div>
+                  <div className="shrink-0 flex items-center gap-3">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="px-4 py-2 bg-stone-900 hover:bg-gold text-white dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-gold dark:hover:text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
+                    >
+                      {uploading ? "Uploading..." : "Choose File"}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
                   {[
-                    { style: "maitama", name: "Maitama Villa" },
-                    { style: "jabi", name: "Jabi Lakeview" },
-                    { style: "wuse", name: "Wuse Boutique" },
-                    { style: "asokoro", name: "Asokoro Royal" }
+                    { style: "maitama", name: "Maitama Preset" },
+                    { style: "jabi", name: "Jabi Preset" },
+                    { style: "wuse", name: "Wuse Preset" },
+                    { style: "asokoro", name: "Asokoro Preset" }
                   ].map((item) => (
                     <button
                       key={item.style}
@@ -381,9 +624,42 @@ export default function AdminPage() {
                         alt={item.name}
                         className="w-full h-12 object-cover rounded-md mb-1"
                       />
-                      <span className="text-[10px]">{item.name}</span>
+                      <span className="text-[9px]">{item.name}</span>
                     </button>
                   ))}
+
+                  {/* Custom Upload Preview */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (uploadedImageUrl) {
+                        setImageStyle("custom");
+                      } else {
+                        fileInputRef.current?.click();
+                      }
+                    }}
+                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
+                      imageStyle === "custom"
+                        ? "border-gold bg-gold/10 text-gold font-semibold"
+                        : "border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-100/50"
+                    }`}
+                  >
+                    {uploadedImageUrl ? (
+                      <>
+                        <img
+                          src={uploadedImageUrl}
+                          alt="Custom upload"
+                          className="w-full h-12 object-cover rounded-md mb-1"
+                        />
+                        <span className="text-[9px] truncate block">Custom Upload</span>
+                      </>
+                    ) : (
+                      <div className="w-full h-12 flex flex-col items-center justify-center border border-dashed border-stone-200 dark:border-zinc-800 rounded-md mb-1 text-stone-400">
+                        <span className="text-sm">📷</span>
+                      </div>
+                    )}
+                    <span className="text-[9px]">{uploadedImageUrl ? "Custom Selected" : "No Custom File"}</span>
+                  </button>
                 </div>
               </div>
 
@@ -421,7 +697,7 @@ export default function AdminPage() {
                 type="submit"
                 className="w-full py-3 rounded-xl bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 hover:bg-gold hover:text-white dark:hover:bg-gold dark:hover:text-white font-bold text-xs transition-colors shadow-md cursor-pointer"
               >
-                Publish Listing
+                {editingPropertyId ? "Save Changes & Update" : "Publish Listing"}
               </button>
             </form>
           </div>
@@ -471,8 +747,21 @@ export default function AdminPage() {
                       </div>
                     </div>
 
+                    {/* Guest details if available */}
+                    {(booking.guestName || booking.guestPhone) && (
+                      <div className="mt-2.5 flex items-center gap-3">
+                        <span className="text-[9px] font-bold text-stone-450 uppercase tracking-widest">Guest Info:</span>
+                        {booking.guestName && (
+                          <span className="text-[10px] text-stone-600 dark:text-zinc-400">👤 {booking.guestName}</span>
+                        )}
+                        {booking.guestPhone && (
+                          <span className="text-[10px] text-stone-650 dark:text-zinc-350">💬 {booking.guestPhone}</span>
+                        )}
+                      </div>
+                    )}
+
                     {booking.addons && booking.addons.length > 0 && (
-                      <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                         <span className="text-[9px] font-bold text-stone-450 uppercase tracking-widest mr-1.5">Add-ons:</span>
                         {booking.addons.map((a) => (
                           <span key={a.id} className="bg-gold/10 text-gold text-[9px] font-extrabold px-2 py-0.5 rounded-full border border-gold/15">
