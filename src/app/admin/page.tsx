@@ -28,8 +28,7 @@ export default function AdminPage() {
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
   
-  // Custom uploaded image or preset selection
-  const [imageStyle, setImageStyle] = useState<"maitama" | "jabi" | "wuse" | "asokoro" | "custom">("maitama");
+  // Custom uploaded image URL
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
   const [uploading, setUploading] = useState(false);
 
@@ -104,7 +103,6 @@ export default function AdminPage() {
       const data = await response.json();
       if (data.url) {
         setUploadedImageUrl(data.url);
-        setImageStyle("custom");
         setNotification("Custom image uploaded successfully!");
         setTimeout(() => setNotification(""), 2500);
       }
@@ -128,20 +126,8 @@ export default function AdminPage() {
     setGuests(property.guests);
     setSelectedAmenities(property.amenities);
 
-    // Determine if using custom or preset image
-    const firstImg = property.images[0] || "";
-    if (firstImg.startsWith("http")) {
-      setUploadedImageUrl(firstImg);
-      setImageStyle("custom");
-    } else {
-      const match = firstImg.match(/\/images\/(maitama|jabi|wuse|asokoro)\.png/);
-      if (match && match[1]) {
-        setImageStyle(match[1] as "maitama" | "jabi" | "wuse" | "asokoro");
-      } else {
-        setUploadedImageUrl(firstImg);
-        setImageStyle("custom");
-      }
-    }
+    // Load existing property image
+    setUploadedImageUrl(property.images[0] || "");
 
     setActiveTab("add-new");
   };
@@ -156,7 +142,6 @@ export default function AdminPage() {
     setBedrooms(1);
     setBathrooms(1);
     setGuests(2);
-    setImageStyle("maitama");
     setUploadedImageUrl("");
     setSelectedAmenities([]);
   };
@@ -168,9 +153,8 @@ export default function AdminPage() {
       return;
     }
 
-    const finalImage = imageStyle === "custom" ? uploadedImageUrl : `/images/${imageStyle}.png`;
-    if (imageStyle === "custom" && !uploadedImageUrl) {
-      alert("Please upload a custom image or select one of the presets.");
+    if (!uploadedImageUrl) {
+      alert("Please upload a showcase image file for your apartment.");
       return;
     }
 
@@ -185,7 +169,7 @@ export default function AdminPage() {
         bedrooms,
         bathrooms,
         guests,
-        images: [finalImage],
+        images: [uploadedImageUrl],
         amenities: selectedAmenities,
       });
       setNotification("Listing successfully updated!");
@@ -200,7 +184,7 @@ export default function AdminPage() {
         bedrooms,
         bathrooms,
         guests,
-        images: [finalImage],
+        images: [uploadedImageUrl],
         amenities: selectedAmenities,
       });
       setNotification("Listing successfully created and published!");
@@ -571,19 +555,32 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Showcase Photo upload or preset style selection */}
+              {/* Showcase Photo upload section */}
               <div>
                 <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-2">
-                  Select Showcase Photo Style or Upload Image
+                  Showcase Photo
                 </label>
-                
-                {/* Upload Section */}
-                <div className="mb-4 flex flex-col sm:flex-row gap-4 items-center p-4 border border-dashed border-stone-200 dark:border-zinc-800 rounded-2xl bg-stone-50/30 dark:bg-zinc-900/10">
-                  <div className="text-center sm:text-left flex-1">
-                    <p className="text-xs font-bold">Upload Custom Property Image</p>
-                    <p className="text-[10px] text-stone-400">Supported formats: JPG, PNG. Image will host permanently on Airtable.</p>
+
+                {uploadedImageUrl ? (
+                  <div className="relative rounded-2xl overflow-hidden border border-stone-200 dark:border-zinc-800 bg-stone-100/50 dark:bg-zinc-900/10 p-2 max-w-lg">
+                    <img
+                      src={uploadedImageUrl}
+                      alt="Showcase preview"
+                      className="w-full h-48 object-cover rounded-xl"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setUploadedImageUrl("")}
+                      className="absolute top-4 right-4 px-3 py-1.5 rounded-xl bg-red-500 hover:bg-red-600 text-white text-[10px] font-bold transition-all shadow-md cursor-pointer"
+                    >
+                      ✕ Remove Photo
+                    </button>
                   </div>
-                  <div className="shrink-0 flex items-center gap-3">
+                ) : (
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-stone-200 dark:border-zinc-850 hover:border-gold dark:hover:border-gold rounded-2xl bg-stone-50/30 dark:bg-zinc-900/10 cursor-pointer transition-colors"
+                  >
                     <input
                       type="file"
                       accept="image/*"
@@ -591,76 +588,13 @@ export default function AdminPage() {
                       onChange={handleImageUpload}
                       className="hidden"
                     />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="px-4 py-2 bg-stone-900 hover:bg-gold text-white dark:bg-zinc-50 dark:text-zinc-950 dark:hover:bg-gold dark:hover:text-white text-xs font-bold rounded-xl transition-all cursor-pointer disabled:opacity-50"
-                    >
-                      {uploading ? "Uploading..." : "Choose File"}
-                    </button>
+                    <div className="w-10 h-10 rounded-full bg-stone-100 dark:bg-zinc-900 flex items-center justify-center text-base shadow-sm mb-3">
+                      📷
+                    </div>
+                    <p className="text-xs font-bold">{uploading ? "Uploading..." : "Click to upload showcase image"}</p>
+                    <p className="text-[9px] text-stone-400 mt-1">Supported formats: JPG, PNG. Image will host permanently on Airtable.</p>
                   </div>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
-                  {[
-                    { style: "maitama", name: "Maitama Preset" },
-                    { style: "jabi", name: "Jabi Preset" },
-                    { style: "wuse", name: "Wuse Preset" },
-                    { style: "asokoro", name: "Asokoro Preset" }
-                  ].map((item) => (
-                    <button
-                      key={item.style}
-                      type="button"
-                      onClick={() => setImageStyle(item.style as "maitama" | "jabi" | "wuse" | "asokoro")}
-                      className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                        imageStyle === item.style
-                          ? "border-gold bg-gold/10 text-gold font-semibold"
-                          : "border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-100/50"
-                      }`}
-                    >
-                      <img
-                        src={`/images/${item.style}.png`}
-                        alt={item.name}
-                        className="w-full h-12 object-cover rounded-md mb-1"
-                      />
-                      <span className="text-[9px]">{item.name}</span>
-                    </button>
-                  ))}
-
-                  {/* Custom Upload Preview */}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (uploadedImageUrl) {
-                        setImageStyle("custom");
-                      } else {
-                        fileInputRef.current?.click();
-                      }
-                    }}
-                    className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer ${
-                      imageStyle === "custom"
-                        ? "border-gold bg-gold/10 text-gold font-semibold"
-                        : "border-stone-200 dark:border-zinc-800 text-stone-500 hover:bg-stone-100/50"
-                    }`}
-                  >
-                    {uploadedImageUrl ? (
-                      <>
-                        <img
-                          src={uploadedImageUrl}
-                          alt="Custom upload"
-                          className="w-full h-12 object-cover rounded-md mb-1"
-                        />
-                        <span className="text-[9px] truncate block">Custom Upload</span>
-                      </>
-                    ) : (
-                      <div className="w-full h-12 flex flex-col items-center justify-center border border-dashed border-stone-200 dark:border-zinc-800 rounded-md mb-1 text-stone-400">
-                        <span className="text-sm">📷</span>
-                      </div>
-                    )}
-                    <span className="text-[9px]">{uploadedImageUrl ? "Custom Selected" : "No Custom File"}</span>
-                  </button>
-                </div>
+                )}
               </div>
 
               {/* Amenities checkboxes */}
