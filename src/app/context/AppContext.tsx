@@ -92,7 +92,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  // Initialize values on client side
+  // Initialize values on client side & sync from API
   useEffect(() => {
     try {
       const savedBookings = localStorage.getItem("domos_bookings") || localStorage.getItem("abuja_bookings");
@@ -105,15 +105,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const parsed = JSON.parse(savedProperties);
         if (Array.isArray(parsed) && parsed.length > 0) {
           setProperties(parsed);
-        } else {
-          setProperties(INITIAL_PROPERTIES);
         }
-      } else {
-        setProperties(INITIAL_PROPERTIES);
       }
-    } catch {
-      setProperties(INITIAL_PROPERTIES);
-    }
+    } catch {}
+
+    // Always fetch latest live properties from server API so all mobile and desktop devices see new listings
+    refreshProperties();
 
     try {
       const savedTheme = localStorage.getItem("domos_theme") || localStorage.getItem("abuja_theme");
@@ -161,6 +158,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(propertyToAdd),
       });
+      await refreshProperties();
     } catch (e) {
       console.warn("API addProperty sync error:", e);
     }
@@ -177,6 +175,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await fetch(`/api/properties?id=${propertyId}`, {
         method: "DELETE",
       });
+      await refreshProperties();
     } catch (e) {
       console.warn("API deleteProperty sync error:", e);
     }
@@ -195,6 +194,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id: propertyId, ...updatedFields }),
       });
+      await refreshProperties();
     } catch (e) {
       console.warn("API updateProperty sync error:", e);
     }
