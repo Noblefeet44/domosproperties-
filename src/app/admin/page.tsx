@@ -85,15 +85,20 @@ export default function AdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableAmenities = [
-    "Private Balcony",
-    "High-speed Fiber Wi-Fi",
-    "Central Heating",
-    "Smart Keyless Entry",
-    "Elevator / Lift Access",
-    "Concierge Service",
-    "Washer & Dryer",
-    "Fully Equipped Gym",
-    "Underground Garage"
+    "24/7 Industrial Borehole Water",
+    "Prepaid Electricity Meter (PHCN)",
+    "24/7 Gated Security Guard",
+    "Solar Power & Inverter Backup",
+    "Standby Generator Backup",
+    "Tiled Flooring & POP Ceilings",
+    "Fenced Compound & Security Gate",
+    "Reading Study Desk & Chair",
+    "Daily Waste Management",
+    "Ample Car & Bike Parking",
+    "Kitchenette with Sink & Cabinets",
+    "En-Suite Bathroom & Water Heater",
+    "Burglar Proofed Windows",
+    "Close to Campus Shuttle Bus Stop"
   ];
 
   // Load authentication status on mount
