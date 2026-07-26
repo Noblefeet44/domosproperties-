@@ -14,14 +14,11 @@ export const PropertyDetailsModal: React.FC = () => {
 
   // Tenant Application Form Fields
   const [fullName, setFullName] = useState("");
-  const [email, setEmail] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
-  const [institution, setInstitution] = useState("Ambrose Alli University (AAU)");
-  const [department, setDepartment] = useState("");
-  const [level, setLevel] = useState("100 Level");
-  const [guarantorName, setGuarantorName] = useState("");
-  const [guarantorPhone, setGuarantorPhone] = useState("");
-  const [guarantorRelation, setGuarantorRelation] = useState("Parent / Guardian");
+  const [propertyType, setPropertyType] = useState("Self-Contained Single Room Lodge");
+  const [preferredLocation, setPreferredLocation] = useState("AAU Main Gate Area");
+  const [occupation, setOccupation] = useState("Undergraduate Student");
+  const [agreeInspectionFee, setAgreeInspectionFee] = useState(false);
   const [moveInDate, setMoveInDate] = useState("");
 
   // Dynamic Fee Selection Checkboxes
@@ -45,6 +42,12 @@ export const PropertyDetailsModal: React.FC = () => {
       setActiveTab("overview");
       setSelectedImageIdx(0);
       setErrorMessage("");
+      setFullName("");
+      setWhatsapp("");
+      setPropertyType("Self-Contained Single Room Lodge");
+      setPreferredLocation(selectedProperty.neighborhood || "AAU Main Gate Area");
+      setOccupation("Undergraduate Student");
+      setAgreeInspectionFee(false);
       setPayRent(true);
       setPayCaution(true);
       setPayReservation(true);
@@ -80,6 +83,8 @@ export const PropertyDetailsModal: React.FC = () => {
   const inspectionFeeAmount = selectedProperty.inspectionFee && selectedProperty.inspectionFee > 0 ? selectedProperty.inspectionFee : 0;
   const legalFeeAmount = selectedProperty.legalFee && selectedProperty.legalFee > 0 ? selectedProperty.legalFee : 0;
 
+  const hasOptionalAdminFees = cautionFeeAmount > 0 || reservationFeeAmount > 0 || agencyFeeAmount > 0 || inspectionFeeAmount > 0 || legalFeeAmount > 0;
+
   const totalCalculatedPayment = 
     (payRent ? rentFeeAmount : 0) +
     (cautionFeeAmount > 0 && payCaution ? cautionFeeAmount : 0) +
@@ -107,20 +112,30 @@ export const PropertyDetailsModal: React.FC = () => {
     setStep("apply");
   };
 
-  const handleProceedToPayment = (e: React.FormEvent) => {
+  const handleFormNext = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !email.trim() || !whatsapp.trim() || !department.trim() || !guarantorName.trim() || !guarantorPhone.trim()) {
-      setErrorMessage("Please complete all required fields in the Tenant Application Form.");
+    if (!fullName.trim() || !whatsapp.trim() || !propertyType.trim() || !preferredLocation.trim() || !occupation.trim()) {
+      setErrorMessage("Please complete all required fields in the application form.");
       return;
     }
+    if (!agreeInspectionFee) {
+      setErrorMessage("You must check the agreement box to accept paying the inspection fee.");
+      return;
+    }
+
     setErrorMessage("");
-    setStep("payment");
+
+    if (hasOptionalAdminFees) {
+      setStep("payment");
+    } else {
+      handleFinalPaymentSubmit(e);
+    }
   };
 
   const handleFinalPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (totalCalculatedPayment <= 0) {
-      setErrorMessage("Please select at least one payment component to complete your application.");
+    if (!agreeInspectionFee) {
+      setErrorMessage("You must agree to pay the inspection fee to submit your application.");
       return;
     }
 
@@ -144,14 +159,14 @@ export const PropertyDetailsModal: React.FC = () => {
 
       setStep("success");
 
-      // 2. Automatically forward complete tenant application details to Admin WhatsApp (07073537007)
+      // 2. Automatically forward complete application details to Admin WhatsApp (07073537007)
       if (typeof window !== "undefined") {
         window.open(directWhatsAppUrl, "_blank");
       }
     } catch (err: unknown) {
       const error = err as Error;
-      console.error("Booking Payment Error:", error);
-      setErrorMessage(error.message || "Failed to submit booking. Please try again.");
+      console.error("Booking Application Error:", error);
+      setErrorMessage(error.message || "Failed to submit application. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -159,7 +174,7 @@ export const PropertyDetailsModal: React.FC = () => {
 
   // Build comprehensive WhatsApp pre-filled message text targeting Admin (07073537007)
   const feeLines = [
-    `• Annual Rent: ${payRent ? `₦${rentFeeAmount.toLocaleString()}` : "Not Selected"}`,
+    `• Base Rent: ${payRent ? `₦${rentFeeAmount.toLocaleString()}` : "Not Selected"}`,
     cautionFeeAmount > 0 ? `• Caution Fee (Refundable): ${payCaution ? `₦${cautionFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
     reservationFeeAmount > 0 ? `• Reservation Fee: ${payReservation ? `₦${reservationFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
     agencyFeeAmount > 0 ? `• Agency Fee: ${payAgency ? `₦${agencyFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
@@ -168,32 +183,25 @@ export const PropertyDetailsModal: React.FC = () => {
   ].filter(Boolean).join("\n");
 
   const whatsappMsgText = encodeURIComponent(
-    `📋 *DOMOS PROPERTY GLOBAL LIMITED — TENANT RENTAL APPLICATION*\n` +
+    `📋 *DOMOS PROPERTY GLOBAL LIMITED — TENANT PROPERTY APPLICATION*\n` +
     `--------------------------------------------------\n` +
     `🏠 *PROPERTY:* ${selectedProperty.title}\n` +
     `📍 *LOCATION:* ${selectedProperty.location} (${selectedProperty.neighborhood})\n` +
     `--------------------------------------------------\n` +
-    `👤 *TENANT PERSONAL DETAILS:*\n` +
+    `👤 *APPLICANT DETAILS:*\n` +
     `• Full Name: ${fullName}\n` +
-    `• Email Address: ${email}\n` +
     `• WhatsApp Phone: ${whatsapp}\n` +
+    `• Occupation: ${occupation}\n` +
+    `• Desired Property Type: ${propertyType}\n` +
+    `• Preferred Location: ${preferredLocation}\n` +
     `• Move-in Date: ${moveInDate}\n` +
-    `--------------------------------------------------\n` +
-    `🎓 *ACADEMIC DETAILS:*\n` +
-    `• Institution: ${institution}\n` +
-    `• Department / Course: ${department}\n` +
-    `• Level of Study: ${level}\n` +
-    `--------------------------------------------------\n` +
-    `🛡️ *GUARANTOR / PARENT CONTACT:*\n` +
-    `• Guarantor Name: ${guarantorName}\n` +
-    `• Guarantor Phone: ${guarantorPhone}\n` +
-    `• Relationship: ${guarantorRelation}\n` +
+    `• Inspection Fee Agreement: ACCEPTED ✓ (Agreed to pay inspection fee)\n` +
     `--------------------------------------------------\n` +
     `💵 *PAYMENT SUMMARY:*\n` +
     `${feeLines}\n` +
-    `💰 *TOTAL AMOUNT DUE:* ₦${totalCalculatedPayment.toLocaleString()}\n` +
+    `💰 *TOTAL ESTIMATED AMOUNT:* ₦${totalCalculatedPayment.toLocaleString()}\n` +
     `--------------------------------------------------\n` +
-    `Kindly review my application & confirm booking. Thank you!`
+    `Kindly review my application details & schedule inspection. Thank you!`
   );
 
   const directWhatsAppUrl = `https://wa.me/2347073537007?text=${whatsappMsgText}`;
@@ -501,21 +509,6 @@ export const PropertyDetailsModal: React.FC = () => {
                     <span>→</span>
                   </button>
                 </div>
-
-                {/* Agent Contact Details */}
-                <div className="mt-6 pt-4 border-t border-sky-100 dark:border-slate-800 text-center space-y-2">
-                  <a
-                    href={directWhatsAppUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-full py-2.5 px-4 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-colors flex items-center justify-center gap-2 shadow-xs"
-                  >
-                    <span>💬 Chat Agent on WhatsApp (07073537007)</span>
-                  </a>
-                  <p className="text-[9px] text-slate-400 dark:text-slate-500">
-                    DOMOS PROPERTY GLOBAL LIMITED • Ekpoma Managed Housing
-                  </p>
-                </div>
               </div>
 
               {/* Similar Apartments / Hostels Recommendations */}
@@ -601,13 +594,14 @@ export const PropertyDetailsModal: React.FC = () => {
                 </button>
               </div>
 
-              <form onSubmit={handleProceedToPayment} className="space-y-4">
+              <form onSubmit={handleFormNext} className="space-y-4">
                 {errorMessage && (
                   <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold">
                     {errorMessage}
                   </div>
                 )}
 
+                {/* Full Name & WhatsApp Number */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
@@ -625,23 +619,7 @@ export const PropertyDetailsModal: React.FC = () => {
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Email Address *
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. student@aauekpoma.edu.ng"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      WhatsApp Phone Number *
+                      WhatsApp Number *
                     </label>
                     <input
                       type="tel"
@@ -652,6 +630,72 @@ export const PropertyDetailsModal: React.FC = () => {
                       required
                     />
                   </div>
+                </div>
+
+                {/* Property Type Options & Preferred Location */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                      What type of property are you looking for? *
+                    </label>
+                    <select
+                      value={propertyType}
+                      onChange={(e) => setPropertyType(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
+                      required
+                    >
+                      <option value="Self-Contained Single Room Lodge">Self-Contained Single Room Lodge</option>
+                      <option value="Self-Contained Double Room Lodge">Self-Contained Double Room Lodge</option>
+                      <option value="1-Bedroom Executive Apartment / Shortlet">1-Bedroom Executive Apartment / Shortlet</option>
+                      <option value="2-Bedroom Shared / Family Flat">2-Bedroom Shared / Family Flat</option>
+                      <option value="Executive Studio Suite">Executive Studio Suite</option>
+                      <option value="Short-Stay Hotel Lodge">Short-Stay Hotel Lodge</option>
+                      <option value="Other Custom Accommodation">Other Custom Accommodation</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                      Preferred Location *
+                    </label>
+                    <select
+                      value={preferredLocation}
+                      onChange={(e) => setPreferredLocation(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
+                      required
+                    >
+                      <option value="AAU Main Gate Area">AAU Main Gate Area</option>
+                      <option value="Ihniduma Campus Zone">Ihniduma Campus Zone</option>
+                      <option value="Benin-Auchi Expressway">Benin-Auchi Expressway</option>
+                      <option value="University Road">University Road</option>
+                      <option value="Royal Market Area">Royal Market Area</option>
+                      <option value="Emaudo Quarters">Emaudo Quarters</option>
+                      <option value="Anywhere in Ekpoma">Anywhere in Ekpoma</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Occupation & Move-in Date */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                      Occupation *
+                    </label>
+                    <select
+                      value={occupation}
+                      onChange={(e) => setOccupation(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
+                      required
+                    >
+                      <option value="Undergraduate Student">Undergraduate Student (AAU)</option>
+                      <option value="Post-Graduate / Research Student">Post-Graduate / Research Student</option>
+                      <option value="Young Professional / Corporate Worker">Young Professional / Corporate Worker</option>
+                      <option value="Remote Worker / Freelancer">Remote Worker / Freelancer</option>
+                      <option value="Intern / NYSC Corper">Intern / NYSC Corper</option>
+                      <option value="Business Traveler / Short Visitor">Business Traveler / Short Visitor</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
@@ -661,117 +705,38 @@ export const PropertyDetailsModal: React.FC = () => {
                       type="date"
                       value={moveInDate}
                       onChange={(e) => setMoveInDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
+                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
                       required
                     />
                   </div>
                 </div>
 
-                <div className="p-4 bg-sky-50 dark:bg-slate-800/50 border border-sky-200 dark:border-slate-700 rounded-2xl space-y-3">
-                  <h4 className="text-xs font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider">
-                    🎓 Academic Information
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Institution
-                      </label>
-                      <input
-                        type="text"
-                        value={institution}
-                        onChange={(e) => setInstitution(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                      />
+                {/* Inspection Fee Agreement Checkbox */}
+                <div className="p-4 bg-sky-50 dark:bg-slate-800/60 border border-sky-200 dark:border-slate-700 rounded-2xl">
+                  <label className="flex items-start gap-3 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={agreeInspectionFee}
+                      onChange={(e) => setAgreeInspectionFee(e.target.checked)}
+                      className="mt-0.5 w-4 h-4 accent-sky-500 rounded-sm shrink-0"
+                      required
+                    />
+                    <div className="text-xs">
+                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block">
+                        Inspection Fee Agreement *
+                      </span>
+                      <span className="text-slate-600 dark:text-slate-300 font-medium">
+                        I click to agree to pay the property inspection fee for a physical on-site tour or live guided video walkthrough.
+                      </span>
                     </div>
-
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Department / Course *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Computer Science"
-                        value={department}
-                        onChange={(e) => setDepartment(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Level of Study
-                      </label>
-                      <select
-                        value={level}
-                        onChange={(e) => setLevel(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                      >
-                        <option value="100 Level">100 Level</option>
-                        <option value="200 Level">200 Level</option>
-                        <option value="300 Level">300 Level</option>
-                        <option value="400 Level">400 Level</option>
-                        <option value="500 Level">500 Level / PG</option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-sky-50 dark:bg-slate-800/50 border border-sky-200 dark:border-slate-700 rounded-2xl space-y-3">
-                  <h4 className="text-xs font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider">
-                    🛡️ Guarantor / Parent Contact
-                  </h4>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Guarantor Full Name *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Chief Johnson Osagie"
-                        value={guarantorName}
-                        onChange={(e) => setGuarantorName(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Guarantor Phone *
-                      </label>
-                      <input
-                        type="tel"
-                        placeholder="e.g. 08033344455"
-                        value={guarantorPhone}
-                        onChange={(e) => setGuarantorPhone(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                        Relationship
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Parent / Guardian"
-                        value={guarantorRelation}
-                        onChange={(e) => setGuarantorRelation(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-sky-200 dark:border-slate-700 bg-white dark:bg-slate-900"
-                      />
-                    </div>
-                  </div>
+                  </label>
                 </div>
 
                 <button
                   type="submit"
-                  className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full py-4 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Proceed to Payment Breakdown & Checkout</span>
+                  <span>{hasOptionalAdminFees ? "Proceed to Payment Breakdown" : "🚀 Submit Application to Admin WhatsApp"}</span>
                   <span>→</span>
                 </button>
               </form>
@@ -984,9 +949,9 @@ export const PropertyDetailsModal: React.FC = () => {
                   className="w-full py-4 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                 >
                   {submitting ? (
-                    <span>Processing Booking Application...</span>
+                    <span>Sending Application to WhatsApp...</span>
                   ) : (
-                    <span>💳 Confirm Booking & Generate Receipt</span>
+                    <span>🚀 Forward Application to Admin WhatsApp</span>
                   )}
                 </button>
               </form>
@@ -1002,36 +967,48 @@ export const PropertyDetailsModal: React.FC = () => {
               </div>
 
               <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 mb-1">
-                Booking Application Generated!
+                Application Form Ready!
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                Thank you, <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>! Your booking for <span className="font-bold text-sky-600">{selectedProperty.title}</span> is ready.
+                Thank you, <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>! Your application details for <span className="font-bold text-sky-600">{selectedProperty.title}</span> have been compiled.
               </p>
 
-              {/* Receipt Summary Card */}
+              {/* Application Summary Card */}
               <div className="w-full text-left bg-sky-50/60 dark:bg-slate-900/80 border border-sky-200 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 text-xs mb-6 shadow-sm">
                 <div className="flex justify-between items-center border-b border-sky-100 dark:border-slate-800 pb-2">
                   <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px]">Property:</span>
                   <span className="font-extrabold text-slate-900 dark:text-slate-100">{selectedProperty.title}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Tenant WhatsApp:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{whatsapp} ({fullName})</span>
+                  <span className="text-slate-500">Applicant Name:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Academic Info:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{institution} ({department}, {level})</span>
+                  <span className="text-slate-500">WhatsApp Phone:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{whatsapp}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Guarantor Contact:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{guarantorName} ({guarantorPhone} - {guarantorRelation})</span>
+                  <span className="text-slate-500">Desired Property Type:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{propertyType}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Preferred Location:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{preferredLocation}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Occupation:</span>
+                  <span className="font-bold text-slate-800 dark:text-slate-200">{occupation}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-500">Inspection Fee Agreement:</span>
+                  <span className="font-bold text-emerald-600">ACCEPTED ✓</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Move-in Date:</span>
                   <span className="font-bold text-slate-800 dark:text-slate-200">{moveInDate}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-sky-100 dark:border-slate-800">
-                  <span className="font-black text-slate-900 dark:text-slate-100">Total Package Amount:</span>
+                  <span className="font-black text-slate-900 dark:text-slate-100">Estimated Total Amount:</span>
                   <span className="text-base font-black text-sky-600 dark:text-sky-400">₦{totalCalculatedPayment.toLocaleString()}</span>
                 </div>
               </div>
@@ -1053,7 +1030,7 @@ export const PropertyDetailsModal: React.FC = () => {
                   onClick={() => setSelectedProperty(null)}
                   className="w-full py-3 rounded-2xl border border-sky-200 dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
                 >
-                  Close & Explore More Hostels
+                  Close & Explore More Properties
                 </button>
               </div>
             </div>
