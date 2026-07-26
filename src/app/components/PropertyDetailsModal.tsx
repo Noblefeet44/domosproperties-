@@ -3,17 +3,14 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
-import { Property, HostelRoom } from "../data/properties";
+import { Property } from "../data/properties";
 
 export const PropertyDetailsModal: React.FC = () => {
   const { properties, selectedProperty, setSelectedProperty, addBooking } = useApp();
   const modalContainerRef = useRef<HTMLDivElement>(null);
   
   const [step, setStep] = useState<"details" | "apply" | "payment" | "success">("details");
-  const [activeTab, setActiveTab] = useState<"overview" | "rooms" | "reviews">("overview");
-  
-  // Selected Room in Hostel
-  const [selectedRoom, setSelectedRoom] = useState<HostelRoom | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "reviews">("overview");
 
   // Tenant Application Form Fields
   const [fullName, setFullName] = useState("");
@@ -27,16 +24,19 @@ export const PropertyDetailsModal: React.FC = () => {
   const [guarantorRelation, setGuarantorRelation] = useState("Parent / Guardian");
   const [moveInDate, setMoveInDate] = useState("");
 
-  // Fee Selection Checkboxes
+  // Dynamic Fee Selection Checkboxes
   const [payRent, setPayRent] = useState(true);
   const [payCaution, setPayCaution] = useState(true);
   const [payReservation, setPayReservation] = useState(true);
+  const [payAgency, setPayAgency] = useState(true);
+  const [payInspection, setPayInspection] = useState(true);
+  const [payLegal, setPayLegal] = useState(true);
   
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [selectedImageIdx, setSelectedImageIdx] = useState(0);
 
-  // Reset form & auto-select available room when selected property changes
+  // Reset form when selected property changes
   useEffect(() => {
     if (selectedProperty) {
       const today = new Date();
@@ -45,23 +45,13 @@ export const PropertyDetailsModal: React.FC = () => {
       setActiveTab("overview");
       setSelectedImageIdx(0);
       setErrorMessage("");
+      setPayRent(true);
+      setPayCaution(true);
+      setPayReservation(true);
+      setPayAgency(true);
+      setPayInspection(true);
+      setPayLegal(true);
 
-      if (selectedProperty.rooms && selectedProperty.rooms.length > 0) {
-        const firstAvail = selectedProperty.rooms.find(r => r.status === "available") || {
-          roomNumber: selectedProperty.rooms[0].roomNumber,
-          status: "available",
-          type: selectedProperty.rooms[0].type,
-          price: selectedProperty.rooms[0].price,
-        };
-        setSelectedRoom(firstAvail);
-      } else {
-        setSelectedRoom({
-          roomNumber: "Executive Suite 101",
-          status: "available",
-          type: "Self-Contained Single",
-          price: selectedProperty.price,
-        });
-      }
       if (modalContainerRef.current) {
         modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
       }
@@ -82,15 +72,24 @@ export const PropertyDetailsModal: React.FC = () => {
     })
     .slice(0, 3);
 
-  // Fee Calculations
-  const rentFeeAmount = selectedRoom ? selectedRoom.price : selectedProperty.price;
-  const cautionFeeAmount = selectedProperty.cautionFee || 30000;
-  const reservationFeeAmount = selectedProperty.reservationFee || 20000;
+  // Fee Calculations (Only include optional fees if configured by Admin > 0)
+  const rentFeeAmount = selectedProperty.price;
+  const cautionFeeAmount = selectedProperty.cautionFee && selectedProperty.cautionFee > 0 ? selectedProperty.cautionFee : 0;
+  const reservationFeeAmount = selectedProperty.reservationFee && selectedProperty.reservationFee > 0 ? selectedProperty.reservationFee : 0;
+  const agencyFeeAmount = selectedProperty.agencyFee && selectedProperty.agencyFee > 0 ? selectedProperty.agencyFee : 0;
+  const inspectionFeeAmount = selectedProperty.inspectionFee && selectedProperty.inspectionFee > 0 ? selectedProperty.inspectionFee : 0;
+  const legalFeeAmount = selectedProperty.legalFee && selectedProperty.legalFee > 0 ? selectedProperty.legalFee : 0;
 
   const totalCalculatedPayment = 
     (payRent ? rentFeeAmount : 0) +
-    (payCaution ? cautionFeeAmount : 0) +
-    (payReservation ? reservationFeeAmount : 0);
+    (cautionFeeAmount > 0 && payCaution ? cautionFeeAmount : 0) +
+    (reservationFeeAmount > 0 && payReservation ? reservationFeeAmount : 0) +
+    (agencyFeeAmount > 0 && payAgency ? agencyFeeAmount : 0) +
+    (inspectionFeeAmount > 0 && payInspection ? inspectionFeeAmount : 0) +
+    (legalFeeAmount > 0 && payLegal ? legalFeeAmount : 0);
+
+  const totalBasePackage = 
+    rentFeeAmount + cautionFeeAmount + reservationFeeAmount + agencyFeeAmount + inspectionFeeAmount + legalFeeAmount;
 
   const handleSelectSimilarProperty = (prop: Property) => {
     setSelectedProperty(prop);
@@ -104,14 +103,6 @@ export const PropertyDetailsModal: React.FC = () => {
 
   const handleProceedToApplication = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!selectedRoom) {
-      setSelectedRoom({
-        roomNumber: "Executive Suite 101",
-        status: "available",
-        type: "Self-Contained Single",
-        price: selectedProperty.price,
-      });
-    }
     setErrorMessage("");
     setStep("apply");
   };
@@ -129,7 +120,7 @@ export const PropertyDetailsModal: React.FC = () => {
   const handleFinalPaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (totalCalculatedPayment <= 0) {
-      setErrorMessage("Please select at least one fee component (Rent, Caution Fee, or Reservation Fee) to make a payment.");
+      setErrorMessage("Please select at least one payment component to complete your application.");
       return;
     }
 
@@ -167,12 +158,20 @@ export const PropertyDetailsModal: React.FC = () => {
   };
 
   // Build comprehensive WhatsApp pre-filled message text targeting Admin (07073537007)
+  const feeLines = [
+    `• Annual Rent: ${payRent ? `₦${rentFeeAmount.toLocaleString()}` : "Not Selected"}`,
+    cautionFeeAmount > 0 ? `• Caution Fee (Refundable): ${payCaution ? `₦${cautionFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
+    reservationFeeAmount > 0 ? `• Reservation Fee: ${payReservation ? `₦${reservationFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
+    agencyFeeAmount > 0 ? `• Agency Fee: ${payAgency ? `₦${agencyFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
+    inspectionFeeAmount > 0 ? `• Inspection Fee: ${payInspection ? `₦${inspectionFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
+    legalFeeAmount > 0 ? `• Legal Fee: ${payLegal ? `₦${legalFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
+  ].filter(Boolean).join("\n");
+
   const whatsappMsgText = encodeURIComponent(
     `📋 *DOMOS PROPERTY GLOBAL LIMITED — TENANT RENTAL APPLICATION*\n` +
     `--------------------------------------------------\n` +
     `🏠 *PROPERTY:* ${selectedProperty.title}\n` +
     `📍 *LOCATION:* ${selectedProperty.location} (${selectedProperty.neighborhood})\n` +
-    `🚪 *ROOM ALLOCATION:* ${selectedRoom ? `${selectedRoom.roomNumber} (${selectedRoom.type})` : "Executive Suite"}\n` +
     `--------------------------------------------------\n` +
     `👤 *TENANT PERSONAL DETAILS:*\n` +
     `• Full Name: ${fullName}\n` +
@@ -191,12 +190,10 @@ export const PropertyDetailsModal: React.FC = () => {
     `• Relationship: ${guarantorRelation}\n` +
     `--------------------------------------------------\n` +
     `💵 *PAYMENT SUMMARY:*\n` +
-    `• Annual Rent: ${payRent ? `₦${rentFeeAmount.toLocaleString()}` : "Not Selected"}\n` +
-    `• Caution Deposit: ${payCaution ? `₦${cautionFeeAmount.toLocaleString()}` : "Not Selected"}\n` +
-    `• Reservation Hold Deposit: ${payReservation ? `₦${reservationFeeAmount.toLocaleString()}` : "Not Selected"}\n` +
+    `${feeLines}\n` +
     `💰 *TOTAL AMOUNT DUE:* ₦${totalCalculatedPayment.toLocaleString()}\n` +
     `--------------------------------------------------\n` +
-    `Kindly review my application & confirm room reservation. Thank you!`
+    `Kindly review my application & confirm booking. Thank you!`
   );
 
   const directWhatsAppUrl = `https://wa.me/2347073537007?text=${whatsappMsgText}`;
@@ -214,7 +211,7 @@ export const PropertyDetailsModal: React.FC = () => {
           <div className="flex items-center gap-2">
             <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
             <span className="text-xs font-black uppercase tracking-wider text-sky-800 dark:text-sky-300">
-              DOMOS PROPERTY GLOBAL LIMITED • HOSTEL PORTAL
+              DOMOS PROPERTY GLOBAL LIMITED • TENANT PORTAL
             </span>
           </div>
 
@@ -235,11 +232,11 @@ export const PropertyDetailsModal: React.FC = () => {
             <div className="grid grid-cols-1 md:grid-cols-12">
               {/* Left Column: Room Gallery & Tabs */}
               <div className="p-5 md:p-7 md:col-span-7 border-b md:border-b-0 md:border-r border-sky-100 dark:border-slate-800">
-                {/* Image Gallery Carousel */}
+                {/* Image Gallery Carousel (Horizontal Sliding with Sideways Arrows) */}
                 <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden mb-3 shadow-md group bg-slate-950">
                   <div 
-                    className="w-full h-full flex flex-col transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateY(-${selectedImageIdx * 100}%)` }}
+                    className="w-full h-full flex flex-row transition-transform duration-500 ease-in-out"
+                    style={{ transform: `translateX(-${selectedImageIdx * 100}%)` }}
                   >
                     {(selectedProperty.images && selectedProperty.images.length > 0 
                       ? selectedProperty.images 
@@ -256,7 +253,7 @@ export const PropertyDetailsModal: React.FC = () => {
                     ))}
                   </div>
 
-                  {/* Gradient Overlay & Property Badges */}
+                  {/* Gradient Overlay & Property Title */}
                   <div className="absolute bottom-4 left-4 text-white z-10 pointer-events-none">
                     <span className="text-[10px] uppercase font-extrabold tracking-widest gold-bg-gradient text-white px-2.5 py-1 rounded-full shadow-xs">
                       📍 {selectedProperty.neighborhood}
@@ -266,15 +263,16 @@ export const PropertyDetailsModal: React.FC = () => {
 
                   {/* Slide Counter Badge */}
                   <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full z-10 flex items-center gap-1 border border-white/20">
-                    <span>🖼️ Room Gallery</span>
+                    <span>🖼️ Gallery</span>
                     <span>
                       ({selectedImageIdx + 1}/{selectedProperty.images?.length || 1})
                     </span>
                   </div>
 
-                  {/* Vertical Navigation Up & Down Controls */}
+                  {/* Sideways Horizontal Navigation Arrows (Left & Right) */}
                   {selectedProperty.images && selectedProperty.images.length > 1 && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex flex-col gap-2 z-20">
+                    <>
+                      {/* Left Arrow Button */}
                       <button
                         type="button"
                         onClick={() =>
@@ -282,14 +280,15 @@ export const PropertyDetailsModal: React.FC = () => {
                             prev === 0 ? selectedProperty.images.length - 1 : prev - 1
                           )
                         }
-                        className="p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer"
+                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer z-20"
                         aria-label="Previous photo"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
                         </svg>
                       </button>
 
+                      {/* Right Arrow Button */}
                       <button
                         type="button"
                         onClick={() =>
@@ -297,14 +296,14 @@ export const PropertyDetailsModal: React.FC = () => {
                             (prev + 1) % selectedProperty.images.length
                           )
                         }
-                        className="p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer"
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer z-20"
                         aria-label="Next photo"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-3.5 h-3.5">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" />
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                         </svg>
                       </button>
-                    </div>
+                    </>
                   )}
                 </div>
 
@@ -340,17 +339,6 @@ export const PropertyDetailsModal: React.FC = () => {
                     }`}
                   >
                     Overview & Location
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("rooms")}
-                    className={`pb-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 flex items-center gap-1.5 cursor-pointer ${
-                      activeTab === "rooms"
-                        ? "border-sky-500 text-sky-600 dark:text-sky-400"
-                        : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                    }`}
-                  >
-                    🗓️ Room Availability Grid ({selectedProperty.rooms?.length || 0})
                   </button>
                   <button
                     type="button"
@@ -403,64 +391,6 @@ export const PropertyDetailsModal: React.FC = () => {
                   </div>
                 )}
 
-                {activeTab === "rooms" && (
-                  <div className="space-y-4">
-                    <div className="p-3 bg-sky-50 dark:bg-slate-800/40 border border-sky-200 dark:border-slate-700 rounded-xl text-xs">
-                      <p className="font-bold text-sky-900 dark:text-sky-200">
-                        ⚡ Real-Time Room Availability Calendar
-                      </p>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-400">
-                        Select an available room below to lock in your booking application.
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {selectedProperty.rooms?.map((rm) => {
-                        const isSelected = selectedRoom?.roomNumber === rm.roomNumber;
-                        const isAvailable = rm.status === "available";
-
-                        return (
-                          <button
-                            key={rm.roomNumber}
-                            type="button"
-                            disabled={!isAvailable}
-                            onClick={() => setSelectedRoom(rm)}
-                            className={`p-3.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                              isSelected
-                                ? "border-sky-500 bg-sky-50/80 dark:bg-slate-800 ring-2 ring-sky-500"
-                                : isAvailable
-                                ? "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 hover:border-sky-300"
-                                : "border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-950/60 opacity-60 cursor-not-allowed"
-                            }`}
-                          >
-                            <div className="flex justify-between items-start mb-2">
-                              <span className="text-xs font-black text-slate-900 dark:text-slate-100">
-                                {rm.roomNumber}
-                              </span>
-                              <span className={`text-[9px] font-extrabold uppercase px-2 py-0.5 rounded-full ${
-                                rm.status === "available"
-                                  ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300"
-                                  : rm.status === "reserved"
-                                  ? "bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300"
-                                  : "bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300"
-                              }`}>
-                                {rm.status}
-                              </span>
-                            </div>
-
-                            <div className="flex justify-between items-center text-xs">
-                              <span className="text-[10px] text-slate-500 font-medium">{rm.type}</span>
-                              <span className="font-extrabold text-sky-600 dark:text-sky-400">
-                                ₦{rm.price.toLocaleString()} / session
-                              </span>
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
                 {activeTab === "reviews" && (
                   <div className="space-y-3">
                     {selectedProperty.reviews?.length === 0 ? (
@@ -499,47 +429,61 @@ export const PropertyDetailsModal: React.FC = () => {
                     </span>
 
                     <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-400">Annual Rent:</span>
+                      <span className="text-slate-600 dark:text-slate-400">Annual / Session Rent:</span>
                       <span className="font-black text-slate-900 dark:text-slate-100">
                         ₦{rentFeeAmount.toLocaleString()}
                       </span>
                     </div>
 
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-400">Caution Deposit (Refundable):</span>
-                      <span className="font-black text-slate-900 dark:text-slate-100">
-                        ₦{cautionFeeAmount.toLocaleString()}
-                      </span>
-                    </div>
+                    {cautionFeeAmount > 0 && (
+                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-600 dark:text-slate-400">Caution Deposit (Refundable):</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          ₦{cautionFeeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
 
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-400">Reservation / Hold Deposit:</span>
-                      <span className="font-black text-slate-900 dark:text-slate-100">
-                        ₦{reservationFeeAmount.toLocaleString()}
-                      </span>
-                    </div>
+                    {reservationFeeAmount > 0 && (
+                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-600 dark:text-slate-400">Reservation / Hold Deposit:</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          ₦{reservationFeeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {agencyFeeAmount > 0 && (
+                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-600 dark:text-slate-400">Agency Fee:</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          ₦{agencyFeeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {inspectionFeeAmount > 0 && (
+                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-600 dark:text-slate-400">Inspection Fee:</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          ₦{inspectionFeeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
+
+                    {legalFeeAmount > 0 && (
+                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
+                        <span className="text-slate-600 dark:text-slate-400">Legal Fee:</span>
+                        <span className="font-black text-slate-900 dark:text-slate-100">
+                          ₦{legalFeeAmount.toLocaleString()}
+                        </span>
+                      </div>
+                    )}
 
                     <div className="flex justify-between items-center text-sm pt-1 font-black text-sky-600 dark:text-sky-400">
                       <span>Total Package:</span>
-                      <span>₦{(rentFeeAmount + cautionFeeAmount + reservationFeeAmount).toLocaleString()}</span>
+                      <span>₦{totalBasePackage.toLocaleString()}</span>
                     </div>
-                  </div>
-
-                  {/* Selected Room Pill */}
-                  <div className="mb-5 p-3 rounded-2xl bg-sky-100/70 dark:bg-slate-800/80 border border-sky-300 dark:border-slate-700 flex justify-between items-center">
-                    <div>
-                      <span className="text-[9px] uppercase font-extrabold text-sky-800 dark:text-sky-300 block">Target Room</span>
-                      <span className="text-xs font-black text-slate-900 dark:text-slate-100">
-                        {selectedRoom ? selectedRoom.roomNumber : "No Room Selected"}
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab("rooms")}
-                      className="text-[10px] font-bold text-sky-600 dark:text-sky-300 hover:underline cursor-pointer"
-                    >
-                      Change Room ⚙️
-                    </button>
                   </div>
 
                   {errorMessage && (
@@ -645,7 +589,7 @@ export const PropertyDetailsModal: React.FC = () => {
                     Tenant Application Form
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Applying for <span className="font-bold text-sky-600">{selectedProperty.title}</span> ({selectedRoom?.roomNumber})
+                    Applying for <span className="font-bold text-sky-600">{selectedProperty.title}</span>
                   </p>
                 </div>
                 <button
@@ -877,9 +821,9 @@ export const PropertyDetailsModal: React.FC = () => {
                       />
                       <div>
                         <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                          Full Academic Session Rent
+                          Annual / Session Rent
                         </span>
-                        <span className="text-[10px] text-slate-500">12 Months Hostel Lease</span>
+                        <span className="text-[10px] text-slate-500">Base Accommodation Rent</span>
                       </div>
                     </div>
                     <span className="text-sm font-black text-sky-600 dark:text-sky-400">
@@ -887,55 +831,140 @@ export const PropertyDetailsModal: React.FC = () => {
                     </span>
                   </label>
 
-                  {/* Caution Fee checkbox */}
-                  <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                    payCaution
-                      ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={payCaution}
-                        onChange={(e) => setPayCaution(e.target.checked)}
-                        className="w-4 h-4 accent-sky-500 rounded-sm"
-                      />
-                      <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                          Refundable Caution Fee
-                        </span>
-                        <span className="text-[10px] text-slate-500">Refundable at end of tenancy</span>
+                  {/* Caution Fee checkbox (Only if filled by Admin > 0) */}
+                  {cautionFeeAmount > 0 && (
+                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
+                      payCaution
+                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={payCaution}
+                          onChange={(e) => setPayCaution(e.target.checked)}
+                          className="w-4 h-4 accent-sky-500 rounded-sm"
+                        />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
+                            Refundable Caution Fee
+                          </span>
+                          <span className="text-[10px] text-slate-500">Refundable at end of tenancy</span>
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                      ₦{cautionFeeAmount.toLocaleString()}
-                    </span>
-                  </label>
+                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
+                        ₦{cautionFeeAmount.toLocaleString()}
+                      </span>
+                    </label>
+                  )}
 
-                  {/* Reservation Deposit checkbox */}
-                  <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                    payReservation
-                      ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={payReservation}
-                        onChange={(e) => setPayReservation(e.target.checked)}
-                        className="w-4 h-4 accent-sky-500 rounded-sm"
-                      />
-                      <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                          Room Reservation Fee
-                        </span>
-                        <span className="text-[10px] text-slate-500">Locks room immediately</span>
+                  {/* Reservation Deposit checkbox (Only if filled by Admin > 0) */}
+                  {reservationFeeAmount > 0 && (
+                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
+                      payReservation
+                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={payReservation}
+                          onChange={(e) => setPayReservation(e.target.checked)}
+                          className="w-4 h-4 accent-sky-500 rounded-sm"
+                        />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
+                            Room Reservation / Hold Fee
+                          </span>
+                          <span className="text-[10px] text-slate-500">Locks property immediately</span>
+                        </div>
                       </div>
-                    </div>
-                    <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                      ₦{reservationFeeAmount.toLocaleString()}
-                    </span>
-                  </label>
+                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
+                        ₦{reservationFeeAmount.toLocaleString()}
+                      </span>
+                    </label>
+                  )}
+
+                  {/* Agency Fee checkbox (Only if filled by Admin > 0) */}
+                  {agencyFeeAmount > 0 && (
+                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
+                      payAgency
+                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={payAgency}
+                          onChange={(e) => setPayAgency(e.target.checked)}
+                          className="w-4 h-4 accent-sky-500 rounded-sm"
+                        />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
+                            Agency Fee
+                          </span>
+                          <span className="text-[10px] text-slate-500">Processing & documentation</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
+                        ₦{agencyFeeAmount.toLocaleString()}
+                      </span>
+                    </label>
+                  )}
+
+                  {/* Inspection Fee checkbox (Only if filled by Admin > 0) */}
+                  {inspectionFeeAmount > 0 && (
+                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
+                      payInspection
+                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={payInspection}
+                          onChange={(e) => setPayInspection(e.target.checked)}
+                          className="w-4 h-4 accent-sky-500 rounded-sm"
+                        />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
+                            Inspection Fee
+                          </span>
+                          <span className="text-[10px] text-slate-500">On-site property tour</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
+                        ₦{inspectionFeeAmount.toLocaleString()}
+                      </span>
+                    </label>
+                  )}
+
+                  {/* Legal Fee checkbox (Only if filled by Admin > 0) */}
+                  {legalFeeAmount > 0 && (
+                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
+                      payLegal
+                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
+                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
+                    }`}>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={payLegal}
+                          onChange={(e) => setPayLegal(e.target.checked)}
+                          className="w-4 h-4 accent-sky-500 rounded-sm"
+                        />
+                        <div>
+                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
+                            Legal / Tenancy Agreement Fee
+                          </span>
+                          <span className="text-[10px] text-slate-500">Legal contract & verification</span>
+                        </div>
+                      </div>
+                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
+                        ₦{legalFeeAmount.toLocaleString()}
+                      </span>
+                    </label>
+                  )}
                 </div>
 
                 {/* Total Payment Banner */}
@@ -976,18 +1005,14 @@ export const PropertyDetailsModal: React.FC = () => {
                 Booking Application Generated!
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                Thank you, <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>! Your booking for <span className="font-bold text-sky-600">{selectedProperty.title} ({selectedRoom?.roomNumber})</span> is ready.
+                Thank you, <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>! Your booking for <span className="font-bold text-sky-600">{selectedProperty.title}</span> is ready.
               </p>
 
               {/* Receipt Summary Card */}
               <div className="w-full text-left bg-sky-50/60 dark:bg-slate-900/80 border border-sky-200 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 text-xs mb-6 shadow-sm">
                 <div className="flex justify-between items-center border-b border-sky-100 dark:border-slate-800 pb-2">
-                  <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px]">Hostel:</span>
+                  <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px]">Property:</span>
                   <span className="font-extrabold text-slate-900 dark:text-slate-100">{selectedProperty.title}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Allocated Room:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{selectedRoom?.roomNumber}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-slate-500">Tenant WhatsApp:</span>
@@ -1038,4 +1063,3 @@ export const PropertyDetailsModal: React.FC = () => {
     </div>
   );
 };
-

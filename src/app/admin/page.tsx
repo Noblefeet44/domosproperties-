@@ -65,8 +65,11 @@ export default function AdminPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
-  const [cautionFee, setCautionFee] = useState("30000");
-  const [reservationFee, setReservationFee] = useState("20000");
+  const [cautionFee, setCautionFee] = useState("");
+  const [reservationFee, setReservationFee] = useState("");
+  const [agencyFee, setAgencyFee] = useState("");
+  const [inspectionFee, setInspectionFee] = useState("");
+  const [legalFee, setLegalFee] = useState("");
   const [location, setLocation] = useState("");
   const [neighborhood, setNeighborhood] = useState<Property["neighborhood"]>("AAU Main Gate");
   const [bedrooms, setBedrooms] = useState(1);
@@ -162,8 +165,11 @@ export default function AdminPage() {
     setTitle(property.title);
     setDescription(property.description);
     setPrice(property.price.toString());
-    setCautionFee((property.cautionFee ?? 30000).toString());
-    setReservationFee((property.reservationFee ?? 20000).toString());
+    setCautionFee(property.cautionFee ? property.cautionFee.toString() : "");
+    setReservationFee(property.reservationFee ? property.reservationFee.toString() : "");
+    setAgencyFee(property.agencyFee ? property.agencyFee.toString() : "");
+    setInspectionFee(property.inspectionFee ? property.inspectionFee.toString() : "");
+    setLegalFee(property.legalFee ? property.legalFee.toString() : "");
     setLocation(property.location);
     setNeighborhood(property.neighborhood);
     setBedrooms(property.bedrooms);
@@ -182,8 +188,11 @@ export default function AdminPage() {
     setTitle("");
     setDescription("");
     setPrice("");
-    setCautionFee("30000");
-    setReservationFee("20000");
+    setCautionFee("");
+    setReservationFee("");
+    setAgencyFee("");
+    setInspectionFee("");
+    setLegalFee("");
     setLocation("");
     setNeighborhood("AAU Main Gate");
     setBedrooms(1);
@@ -206,8 +215,11 @@ export default function AdminPage() {
     }
 
     const parsedPrice = parseInt(price) || 0;
-    const parsedCaution = parseInt(cautionFee) || 0;
-    const parsedReservation = parseInt(reservationFee) || 0;
+    const parsedCaution = cautionFee !== "" ? parseInt(cautionFee) || 0 : undefined;
+    const parsedReservation = reservationFee !== "" ? parseInt(reservationFee) || 0 : undefined;
+    const parsedAgency = agencyFee !== "" ? parseInt(agencyFee) || 0 : undefined;
+    const parsedInspection = inspectionFee !== "" ? parseInt(inspectionFee) || 0 : undefined;
+    const parsedLegal = legalFee !== "" ? parseInt(legalFee) || 0 : undefined;
 
     if (editingPropertyId) {
       // Edit Mode
@@ -217,6 +229,9 @@ export default function AdminPage() {
         price: parsedPrice,
         cautionFee: parsedCaution,
         reservationFee: parsedReservation,
+        agencyFee: parsedAgency,
+        inspectionFee: parsedInspection,
+        legalFee: parsedLegal,
         location,
         neighborhood,
         bedrooms,
@@ -234,6 +249,9 @@ export default function AdminPage() {
         price: parsedPrice,
         cautionFee: parsedCaution,
         reservationFee: parsedReservation,
+        agencyFee: parsedAgency,
+        inspectionFee: parsedInspection,
+        legalFee: parsedLegal,
         location,
         neighborhood,
         bedrooms,
@@ -591,7 +609,7 @@ export default function AdminPage() {
                     </label>
                     <input
                       type="number"
-                      placeholder="e.g. 30000"
+                      placeholder="Optional (e.g. 30000)"
                       value={cautionFee}
                       onChange={(e) => setCautionFee(e.target.value)}
                       className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
@@ -604,9 +622,48 @@ export default function AdminPage() {
                     </label>
                     <input
                       type="number"
-                      placeholder="e.g. 20000"
+                      placeholder="Optional (e.g. 20000)"
                       value={reservationFee}
                       onChange={(e) => setReservationFee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Agency Fee (₦)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Optional (e.g. 15000)"
+                      value={agencyFee}
+                      onChange={(e) => setAgencyFee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Inspection Fee (₦)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Optional (e.g. 5000)"
+                      value={inspectionFee}
+                      onChange={(e) => setInspectionFee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Legal Fee (₦)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="Optional (e.g. 10000)"
+                      value={legalFee}
+                      onChange={(e) => setLegalFee(e.target.value)}
                       className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
                     />
                   </div>

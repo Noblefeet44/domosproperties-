@@ -34,14 +34,6 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
           </span>
         )}
 
-        {/* Room Availability Pill */}
-        <span className={`absolute bottom-3 left-3 text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-md backdrop-blur-md ${
-          availableRoomsCount > 0
-            ? "bg-emerald-900/80 text-emerald-300 border border-emerald-500/40"
-            : "bg-red-900/80 text-red-300 border border-red-500/40"
-        }`}>
-          {availableRoomsCount > 0 ? `🟢 ${availableRoomsCount} Rooms Available` : "🔴 Fully Booked"}
-        </span>
       </div>
 
       {/* Card Content */}
@@ -78,14 +70,14 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
 
         {/* Details badges */}
         <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mb-3 border-b border-sky-100 dark:border-slate-800 pb-3">
-          <span className="flex items-center gap-1 font-medium">
-            🛏️ Self-Contain
+          <span className="flex items-center gap-1 font-semibold">
+            🛏️ {property.bedrooms} {property.bedrooms === 1 ? "Bedroom" : "Bedrooms"}
           </span>
-          <span className="flex items-center gap-1 font-medium">
-            🚿 En-suite
+          <span className="flex items-center gap-1 font-semibold">
+            🚿 {property.bathrooms} {property.bathrooms === 1 ? "Bathroom" : "Bathrooms"}
           </span>
-          <span className="flex items-center gap-1 font-medium">
-            🎓 AAU Ekpoma
+          <span className="flex items-center gap-1 font-semibold truncate">
+            📍 {property.neighborhood}
           </span>
         </div>
 

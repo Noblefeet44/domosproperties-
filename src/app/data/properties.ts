@@ -21,6 +21,9 @@ export interface Property {
   price: number; // in Naira (₦) per academic session / year
   cautionFee?: number; // Refundable caution fee
   reservationFee?: number; // Deposit fee to hold room
+  agencyFee?: number; // Agency fee
+  inspectionFee?: number; // Inspection fee
+  legalFee?: number; // Legal fee
   location: string;
   neighborhood: string;
   bedrooms: number;
