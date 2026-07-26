@@ -10,7 +10,6 @@ export const UserDashboard: React.FC = () => {
     bookings,
     cancelBooking,
     properties,
-    wishlist,
     setActiveView,
     addReview,
   } = useApp();
@@ -19,8 +18,6 @@ export const UserDashboard: React.FC = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState("");
   const [reviewSubmittedBookingId, setReviewSubmittedBookingId] = useState<string | null>(null);
-
-  const activeWishlistProperties = properties.filter((p) => wishlist.includes(p.id));
 
   const handleOpenReviewForm = (bookingId: string) => {
     setActiveReviewBookingId(bookingId);
@@ -59,7 +56,7 @@ export const UserDashboard: React.FC = () => {
               My Reservations
             </h1>
             <p className="text-sm text-stone-500 mt-1.5">
-              Review and manage your bookings at Abuja&apos;s premier locations.
+              Review and manage your bookings at Ekpoma&apos;s premier hostels and residences.
             </p>
           </div>
 
@@ -266,41 +263,6 @@ export const UserDashboard: React.FC = () => {
                   </div>
                 );
               })}
-            </div>
-          )}
-        </div>
-      )}
-
-      {activeView === "wishlist" && (
-        <div>
-          <div className="mb-8">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-              My Wishlist
-            </h1>
-            <p className="text-sm text-stone-500 mt-1.5">
-              Saved listings you are considering for your next trip to Abuja.
-            </p>
-          </div>
-
-          {activeWishlistProperties.length === 0 ? (
-            <div className="text-center py-20 bg-stone-100/30 dark:bg-zinc-900/10 rounded-3xl border border-dashed border-stone-200 dark:border-zinc-800">
-              <span className="text-4xl">❤️</span>
-              <h3 className="text-base font-bold mt-4">Your wishlist is empty</h3>
-              <p className="text-xs text-stone-500 mt-1">
-                Save your favorite luxury properties for quick booking later.
-              </p>
-              <button
-                onClick={() => setActiveView("explore")}
-                className="mt-6 px-6 py-2.5 rounded-full text-xs font-semibold bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 hover:bg-gold dark:hover:bg-gold dark:hover:text-white transition-all shadow-xs"
-              >
-                Explore Properties
-              </button>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {activeWishlistProperties.map((property) => (
-                <PropertyCard key={property.id} property={property} />
-              ))}
             </div>
           )}
         </div>

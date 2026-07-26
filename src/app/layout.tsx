@@ -1,21 +1,18 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "./context/AppContext";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Abuja Shortlet | Premium Shortlets & Luxury Apartments in Abuja",
-  description: "Book exclusive luxury short-stay apartments in Abuja&apos;s premium neighborhoods including Maitama, Asokoro, Wuse II, and Jabi Lake.",
+  title: "DOMOS PROPERTY GLOBAL LIMITED | Premium Student Hostels & Rentals in Ekpoma",
+  description: "Discover verified student hostels and executive rental accommodations in Ekpoma, Edo State near Ambrose Alli University (AAU).",
+  icons: {
+    icon: [
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    shortcut: "/icon.svg",
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -26,9 +23,9 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
-      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 dark:bg-zinc-950 dark:text-zinc-50">
+      <body className="min-h-full flex flex-col bg-stone-50 text-stone-900 dark:bg-zinc-950 dark:text-zinc-50 font-sans">
         <AppProvider>
           {children}
         </AppProvider>
@@ -36,4 +33,3 @@ export default function RootLayout({
     </html>
   );
 }
-

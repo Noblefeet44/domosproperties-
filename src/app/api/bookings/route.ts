@@ -1,60 +1,67 @@
 import { NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: Request) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!apiKey || !baseId) {
-    return NextResponse.json(
-      { error: "Airtable credentials are not configured in environment variables." },
-      { status: 500 }
-    );
-  }
-
   try {
     const body = await request.json();
-    const { id, propertyId, guestName, guestWhatsApp, checkIn, checkOut, guestsCount, totalPrice, addons, status } = body;
+    const generatedBkId = body.id || "BK-" + Math.floor(100000 + Math.random() * 900000);
+    const bookingDate = body.bookingDate || new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-    const newRecord = {
-      fields: {
-        id, // Using the BK-XXXXXX reference as the Airtable record ID
-        propertyId: [propertyId], // Linked records require array of IDs in Airtable
-        guestName,
-        guestWhatsApp,
-        checkIn,
-        checkOut,
-        guestsCount: Number(guestsCount),
-        totalPrice: Number(totalPrice),
-        addons: addons || "None",
-        status: status || "confirmed",
-      },
-    };
+    const supabase = await createClient();
+    if (supabase) {
+      const dbPayload = {
+        id: generatedBkId,
+        property_id: String(body.propertyId),
+        property_name: body.propertyName,
+        property_image: body.propertyImage,
+        property_location: body.propertyLocation,
+        check_in: body.checkIn,
+        check_out: body.checkOut,
+        guests_count: body.guestsCount || 1,
+        total_price: body.totalPrice,
+        status: body.status || "confirmed",
+        booking_date: bookingDate,
+        addons: body.addons || [],
+        guest_name: body.guestName || "Student Guest",
+        guest_phone: body.guestPhone || "",
+      };
 
-    const response = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Bookings`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newRecord),
+      const { error } = await supabase.from("bookings").insert(dbPayload);
+
+      if (error) {
+        console.error("Supabase booking insert error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
       }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Airtable Bookings Create Error: ${errText}`);
     }
 
-    const createdRecord = (await response.json()) as { id: string };
-    return NextResponse.json({ id: createdRecord.id, success: true });
+    return NextResponse.json({ id: generatedBkId, bookingDate, success: true });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("POST /api/bookings error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to create booking in Airtable" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = await createClient();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("bookings")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+      if (!error && data) {
+        return NextResponse.json(data);
+      }
+    }
+
+    return NextResponse.json([]);
+  } catch (error: unknown) {
+    const err = error as Error;
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

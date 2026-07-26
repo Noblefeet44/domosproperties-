@@ -1,13 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #fafaf9;
-  --foreground: #1c1917;
-  --card-bg: rgba(255, 255, 255, 0.7);
-  --card-border: rgba(228, 228, 231, 0.6);
-  --accent-gold: #d4af37;
-  --accent-gold-hover: #bfa130;
-  --glass-bg: rgba(255, 255, 255, 0.6);
+  --background: #ffffff;
+  --foreground: #0f172a;
+  --card-bg: rgba(255, 255, 255, 0.9);
+  --card-border: rgba(226, 232, 240, 0.8);
+  --accent-gold: #0ea5e9;
+  --accent-gold-hover: #0284c7;
+  --glass-bg: rgba(255, 255, 255, 0.8);
 }
 
 @theme inline {
@@ -20,11 +20,11 @@
 }
 
 .dark {
-  --background: #09090b;
-  --foreground: #fafafa;
-  --card-bg: rgba(24, 24, 27, 0.7);
-  --card-border: rgba(39, 39, 42, 0.6);
-  --glass-bg: rgba(9, 9, 11, 0.6);
+  --background: #0b132b;
+  --foreground: #f8fafc;
+  --card-bg: rgba(15, 23, 42, 0.85);
+  --card-border: rgba(30, 41, 59, 0.8);
+  --glass-bg: rgba(11, 19, 43, 0.75);
 }
 
 body {
@@ -48,19 +48,19 @@ body {
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
+  box-shadow: 0 4px 20px rgba(14, 165, 233, 0.06);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.3s ease, border-color 0.3s ease;
 }
 
 .glass-card:hover {
   transform: translateY(-4px);
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
-  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.15);
+  border-color: rgba(14, 165, 233, 0.4);
 }
 
 .dark .glass-card:hover {
-  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
-  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 12px 30px rgba(14, 165, 233, 0.25);
+  border-color: rgba(14, 165, 233, 0.4);
 }
 
 /* Custom Scrollbar */
@@ -74,15 +74,15 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(120, 120, 120, 0.3);
+  background: rgba(14, 165, 233, 0.3);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(120, 120, 120, 0.5);
+  background: rgba(14, 165, 233, 0.6);
 }
 
-/* Shiny gold badge animation */
+/* Light Blue badge & text animations */
 @keyframes shine {
   0% {
     background-position: -200% center;
@@ -93,7 +93,7 @@ body {
 }
 
 .gold-gradient-text {
-  background: linear-gradient(90deg, #bfa130, #f3e5ab, #d4af37, #bfa130);
+  background: linear-gradient(90deg, #0284c7, #38bdf8, #0ea5e9, #0284c7);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
@@ -101,13 +101,13 @@ body {
 }
 
 .gold-bg-gradient {
-  background: linear-gradient(135deg, #d4af37 0%, #bfa130 100%);
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%);
 }
 
 .dark-gradient {
-  background: linear-gradient(180deg, rgba(9,9,11,0) 0%, rgba(9,9,11,0.9) 80%, rgba(9,9,11,1) 100%);
+  background: linear-gradient(180deg, rgba(11,19,43,0) 0%, rgba(11,19,43,0.9) 80%, rgba(11,19,43,1) 100%);
 }
 
 .light-gradient {
-  background: linear-gradient(180deg, rgba(250,250,249,0) 0%, rgba(250,250,249,0.9) 80%, rgba(250,250,249,1) 100%);
+  background: linear-gradient(180deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.9) 80%, rgba(255,255,255,1) 100%);
 }

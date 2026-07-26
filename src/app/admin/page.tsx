@@ -5,6 +5,49 @@ import Link from "next/link";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 
+// Fast client-side canvas image optimizer & downscaler
+const compressImageFile = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX_WIDTH = 900;
+        const MAX_HEIGHT = 900;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_WIDTH) {
+            height = Math.round((height * MAX_WIDTH) / width);
+            width = MAX_WIDTH;
+          }
+        } else {
+          if (height > MAX_HEIGHT) {
+            width = Math.round((width * MAX_HEIGHT) / height);
+            height = MAX_HEIGHT;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        } else {
+          resolve(e.target?.result as string);
+        }
+      };
+      img.onerror = (err) => reject(err);
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = (err) => reject(err);
+    reader.readAsDataURL(file);
+  });
+};
+
 export default function AdminPage() {
   const { properties, addProperty, deleteProperty, updateProperty, bookings, darkMode, toggleDarkMode } = useApp();
 
@@ -22,8 +65,10 @@ export default function AdminPage() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
+  const [cautionFee, setCautionFee] = useState("30000");
+  const [reservationFee, setReservationFee] = useState("20000");
   const [location, setLocation] = useState("");
-  const [neighborhood, setNeighborhood] = useState<Property["neighborhood"]>("Maitama");
+  const [neighborhood, setNeighborhood] = useState<Property["neighborhood"]>("AAU Main Gate");
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
@@ -37,20 +82,20 @@ export default function AdminPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const availableAmenities = [
-    "Private Pool",
-    "24/7 Solar Backup",
-    "Armed Security",
-    "Personal Chef",
-    "High-speed Fiber",
-    "Smart Home",
-    "Lake View",
+    "Private Balcony",
+    "High-speed Fiber Wi-Fi",
+    "Central Heating",
+    "Smart Keyless Entry",
+    "Elevator / Lift Access",
+    "Concierge Service",
+    "Washer & Dryer",
     "Fully Equipped Gym",
-    "Outdoor Lounge"
+    "Underground Garage"
   ];
 
   // Load authentication status on mount
   useEffect(() => {
-    const auth = sessionStorage.getItem("abuja_admin_auth");
+    const auth = sessionStorage.getItem("domos_admin_auth") || sessionStorage.getItem("abuja_admin_auth");
     if (auth === "true") {
       setIsAuthenticated(true);
     }
@@ -58,8 +103,10 @@ export default function AdminPage() {
 
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (passwordInput === "Admin@password") {
+    const adminPass = process.env.ADMIN_PASSWORD || "Admin@password";
+    if (passwordInput === adminPass) {
       sessionStorage.setItem("abuja_admin_auth", "true");
+      sessionStorage.setItem("domos_admin_auth", "true");
       setIsAuthenticated(true);
       setPasswordError(false);
     } else {
@@ -93,32 +140,20 @@ export default function AdminPage() {
     }
 
     setUploading(true);
-    const formData = new FormData();
-    for (let i = 0; i < files.length; i++) {
-      formData.append("files", files[i]);
-    }
 
     try {
-      const response = await fetch("/api/upload", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      const data = await response.json();
-      if (Array.isArray(data.urls)) {
-        setUploadedImageUrls((prev) => [...prev, ...data.urls]);
-        setNotification(`${data.urls.length} image(s) uploaded successfully!`);
-        setTimeout(() => setNotification(""), 2500);
-      }
+      // Compress and resize selected image files to lightweight JPEGs
+      const compressPromises = Array.from(files).map((file) => compressImageFile(file));
+      const dataUrls = await Promise.all(compressPromises);
+      setUploadedImageUrls((prev) => [...prev, ...dataUrls]);
+      setNotification(`${dataUrls.length} photo(s) optimized & uploaded!`);
+      setTimeout(() => setNotification(""), 2500);
     } catch (err) {
-      console.error(err);
-      alert("Failed to upload image. Please try again.");
+      console.error("Image processing error:", err);
+      alert("Failed to process images. Please try again.");
     } finally {
       setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
     }
   };
 
@@ -127,6 +162,8 @@ export default function AdminPage() {
     setTitle(property.title);
     setDescription(property.description);
     setPrice(property.price.toString());
+    setCautionFee((property.cautionFee ?? 30000).toString());
+    setReservationFee((property.reservationFee ?? 20000).toString());
     setLocation(property.location);
     setNeighborhood(property.neighborhood);
     setBedrooms(property.bedrooms);
@@ -145,8 +182,10 @@ export default function AdminPage() {
     setTitle("");
     setDescription("");
     setPrice("");
+    setCautionFee("30000");
+    setReservationFee("20000");
     setLocation("");
-    setNeighborhood("Maitama");
+    setNeighborhood("AAU Main Gate");
     setBedrooms(1);
     setBathrooms(1);
     setGuests(2);
@@ -166,12 +205,18 @@ export default function AdminPage() {
       return;
     }
 
+    const parsedPrice = parseInt(price) || 0;
+    const parsedCaution = parseInt(cautionFee) || 0;
+    const parsedReservation = parseInt(reservationFee) || 0;
+
     if (editingPropertyId) {
       // Edit Mode
       await updateProperty(editingPropertyId, {
         title,
         description,
-        price: parseInt(price),
+        price: parsedPrice,
+        cautionFee: parsedCaution,
+        reservationFee: parsedReservation,
         location,
         neighborhood,
         bedrooms,
@@ -186,7 +231,9 @@ export default function AdminPage() {
       addProperty({
         title,
         description,
-        price: parseInt(price),
+        price: parsedPrice,
+        cautionFee: parsedCaution,
+        reservationFee: parsedReservation,
         location,
         neighborhood,
         bedrooms,
@@ -226,9 +273,9 @@ export default function AdminPage() {
               🔒
             </div>
             <h1 className="text-lg font-extrabold tracking-wider uppercase text-stone-850 dark:text-zinc-200">
-              Abuja<span className="gold-gradient-text">Shortlet</span>
+              DOMOS <span className="gold-gradient-text">PROPERTY</span>
             </h1>
-            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest leading-none mt-1">Admin Workspace Lock</p>
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest leading-none mt-1">Hostel Manager Lock</p>
           </div>
 
           <form onSubmit={handleLoginSubmit} className="space-y-4">
@@ -282,13 +329,13 @@ export default function AdminPage() {
       <header className="border-b border-stone-200/50 dark:border-zinc-800/50 bg-white/70 dark:bg-zinc-950/70 backdrop-blur-md px-6 py-4 sticky top-0 z-30 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg gold-bg-gradient flex items-center justify-center text-white font-bold shadow-md">
-            A
+            D
           </div>
           <div>
             <h1 className="text-sm font-extrabold tracking-wider uppercase text-stone-850 dark:text-zinc-200">
-              Abuja<span className="gold-gradient-text">Shortlet</span>
+              DOMOS <span className="gold-gradient-text">PROPERTY</span>
             </h1>
-            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest leading-none mt-0.5">Admin Workspace</p>
+            <p className="text-[10px] font-semibold text-stone-400 uppercase tracking-widest leading-none mt-0.5">Global Admin Workspace</p>
           </div>
         </div>
 
@@ -326,12 +373,12 @@ export default function AdminPage() {
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 shadow-xs">
             <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest font-extrabold mb-1">Estimated Earnings</p>
             <p className="text-3xl font-black text-emerald-500">₦{totalEarnings.toLocaleString()}</p>
-            <span className="text-[9px] text-stone-400 block mt-2">Calculated from confirmed shortlet orders</span>
+            <span className="text-[9px] text-stone-400 block mt-2">Calculated from confirmed managed bookings</span>
           </div>
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 shadow-xs">
             <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest font-extrabold mb-1">Active Directory Listings</p>
             <p className="text-3xl font-black text-stone-900 dark:text-zinc-50">{totalHostApartments}</p>
-            <span className="text-[9px] text-stone-400 block mt-2">All shortlets published live</span>
+            <span className="text-[9px] text-stone-400 block mt-2">All managed residences published live</span>
           </div>
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 shadow-xs">
             <p className="text-[10px] text-stone-400 dark:text-zinc-500 uppercase tracking-widest font-extrabold mb-1">Bookings Initiated</p>
@@ -360,7 +407,7 @@ export default function AdminPage() {
                 : "border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300"
             }`}
           >
-            {editingPropertyId ? "✏️ Edit Apartment" : "➕ List New Shortlet"}
+            {editingPropertyId ? "✏️ Edit Residence" : "➕ List New Residence"}
           </button>
           <button
             onClick={() => setActiveTab("bookings")}
@@ -370,7 +417,7 @@ export default function AdminPage() {
                 : "border-transparent text-stone-400 hover:text-stone-600 dark:hover:text-zinc-300"
             }`}
           >
-            ✉️ Recent Booking Invoices ({bookings.length})
+            ✉️ Recent Inquiries ({bookings.length})
           </button>
         </div>
 
@@ -384,7 +431,7 @@ export default function AdminPage() {
         {/* Tab 1: Listings Management */}
         {activeTab === "listings" && (
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 shadow-xs">
-            <h2 className="text-base font-bold mb-4">Published Apartments</h2>
+            <h2 className="text-base font-bold mb-4">Published Residences</h2>
             <div className="space-y-4">
               {properties.length === 0 ? (
                 <p className="text-xs text-stone-500 italic py-6 text-center">No properties listed in your directory.</p>
@@ -400,9 +447,13 @@ export default function AdminPage() {
                       <div>
                         <h4 className="text-xs font-bold text-stone-850 dark:text-zinc-200">{property.title}</h4>
                         <p className="text-[10px] text-stone-400">{property.location}</p>
-                        <div className="flex gap-3 mt-1.5">
-                          <span className="text-[10px] font-extrabold text-gold">₦{property.price.toLocaleString()}/night</span>
-                          <span className="text-[10px] text-stone-400">★ {property.rating.toFixed(1)} ({property.reviewsCount} reviews)</span>
+                        <div className="flex flex-wrap items-center gap-2 mt-1.5 text-[10px]">
+                          <span className="font-extrabold text-sky-600 dark:text-sky-400">Rent: ₦{property.price.toLocaleString()}</span>
+                          <span className="text-stone-400">•</span>
+                          <span className="text-stone-600 dark:text-zinc-400 font-semibold">Caution: ₦{(property.cautionFee ?? 30000).toLocaleString()}</span>
+                          <span className="text-stone-400">•</span>
+                          <span className="text-stone-600 dark:text-zinc-400 font-semibold">Hold: ₦{(property.reservationFee ?? 20000).toLocaleString()}</span>
+                          <span className="text-stone-400 font-normal">★ {property.rating.toFixed(1)} ({property.reviewsCount})</span>
                         </div>
                       </div>
                     </div>
@@ -432,7 +483,7 @@ export default function AdminPage() {
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50 max-w-2xl">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-base font-bold">
-                {editingPropertyId ? `Edit Apartment: ${title}` : "List New Shortlet Apartment"}
+                {editingPropertyId ? `Edit Residence: ${title}` : "List New Managed Residence"}
               </h2>
               {editingPropertyId && (
                 <button
@@ -456,7 +507,7 @@ export default function AdminPage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Maitama Executive Suite"
+                    placeholder="e.g. Ehis Executive Hostel Lodge"
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
@@ -473,11 +524,11 @@ export default function AdminPage() {
                     onChange={(e) => setNeighborhood(e.target.value as Property["neighborhood"])}
                     className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
                   >
-                    <option value="Maitama">Maitama</option>
-                    <option value="Asokoro">Asokoro</option>
-                    <option value="Wuse II">Wuse II</option>
-                    <option value="Jabi">Jabi</option>
-                    <option value="Garki">Garki</option>
+                    <option value="AAU Main Gate">AAU Main Gate</option>
+                    <option value="Benin-Auchi Expressway">Benin-Auchi Expressway</option>
+                    <option value="Ihniduma">Ihniduma</option>
+                    <option value="University Road">University Road</option>
+                    <option value="Royal Market">Royal Market</option>
                   </select>
                 </div>
               </div>
@@ -488,7 +539,7 @@ export default function AdminPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 12 Gana Street, Maitama, Abuja"
+                  placeholder="e.g. AAU Main Gate, Ekpoma, Edo State"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
@@ -501,7 +552,7 @@ export default function AdminPage() {
                   Description
                 </label>
                 <textarea
-                  placeholder="Provide a luxury pitch for your apartment..."
+                  placeholder="Provide a luxury pitch for your residence..."
                   rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -510,20 +561,59 @@ export default function AdminPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-1">
-                    Nightly Price (₦)
-                  </label>
-                  <input
-                    type="number"
-                    placeholder="120000"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
-                    required
-                  />
+              {/* Financial Fee Breakdown Inputs */}
+              <div className="p-4 rounded-2xl bg-stone-100/60 dark:bg-zinc-900/60 border border-stone-200 dark:border-zinc-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-xs font-black text-stone-800 dark:text-zinc-200 uppercase tracking-wider">
+                    💵 Financial & Fee Breakdown (Naira ₦)
+                  </h4>
+                  <span className="text-[10px] text-stone-400 font-medium">Editable for all new & existing listings</span>
                 </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Annual / Session Rent (₦) *
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 350000"
+                      value={price}
+                      onChange={(e) => setPrice(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Refundable Caution Fee (₦)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 30000"
+                      value={cautionFee}
+                      onChange={(e) => setCautionFee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-bold text-stone-500 dark:text-zinc-400 uppercase mb-1">
+                      Reservation / Hold Deposit (₦)
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="e.g. 20000"
+                      value={reservationFee}
+                      onChange={(e) => setReservationFee(e.target.value)}
+                      className="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border border-stone-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 focus:ring-1 focus:ring-gold"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-1">
                     Bedrooms

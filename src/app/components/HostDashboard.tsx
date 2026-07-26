@@ -12,7 +12,7 @@ export const HostDashboard: React.FC = () => {
   const [description, setDescription] = useState("");
   const [price, setPrice] = useState("");
   const [location, setLocation] = useState("");
-  const [neighborhood, setNeighborhood] = useState<Property["neighborhood"]>("Maitama");
+  const [neighborhood, setNeighborhood] = useState<Property["neighborhood"]>("AAU Main Gate");
   const [bedrooms, setBedrooms] = useState(1);
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
@@ -35,7 +35,7 @@ export const HostDashboard: React.FC = () => {
   const [notification, setNotification] = useState("");
 
   // Calculate earnings
-  const hostProperties = properties.filter((p) => p.id.length < 8); // Simple logic: base properties + new listings
+  const hostProperties = properties;
   const totalHostApartments = hostProperties.length;
   
   // Calculate mock host earnings from reservations
@@ -94,7 +94,7 @@ export const HostDashboard: React.FC = () => {
             Host Portal
           </h1>
           <p className="text-sm text-stone-500 mt-1.5">
-            Manage your listings and track shortlet earnings in Abuja.
+            Manage your listings and track hostel earnings in Ekpoma.
           </p>
         </div>
       </div>
@@ -138,7 +138,7 @@ export const HostDashboard: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Maitama Executive Suite"
+                  placeholder="e.g. Ehis Executive Hostel Lodge"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
@@ -155,11 +155,11 @@ export const HostDashboard: React.FC = () => {
                   onChange={(e) => setNeighborhood(e.target.value as Property["neighborhood"])}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"
                 >
-                  <option value="Maitama">Maitama</option>
-                  <option value="Asokoro">Asokoro</option>
-                  <option value="Wuse II">Wuse II</option>
-                  <option value="Jabi">Jabi</option>
-                  <option value="Garki">Garki</option>
+                  <option value="AAU Main Gate">AAU Main Gate</option>
+                  <option value="Benin-Auchi Expressway">Benin-Auchi Expressway</option>
+                  <option value="Ihniduma">Ihniduma</option>
+                  <option value="University Road">University Road</option>
+                  <option value="Royal Market">Royal Market</option>
                 </select>
               </div>
             </div>
@@ -195,11 +195,11 @@ export const HostDashboard: React.FC = () => {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div>
                 <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-1">
-                  Nightly Price (₦)
+                  Annual / Session Rent (₦)
                 </label>
                 <input
                   type="number"
-                  placeholder="120000"
+                  placeholder="350000"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-stone-200 dark:border-zinc-800 bg-stone-50/50 dark:bg-zinc-900/50 focus:outline-hidden focus:ring-1 focus:ring-gold"

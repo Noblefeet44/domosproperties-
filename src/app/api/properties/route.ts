@@ -1,346 +1,152 @@
 import { NextResponse } from "next/server";
-
-interface AirtableImage {
-  url: string;
-  thumbnails?: {
-    full?: {
-      url: string;
-    };
-  };
-}
-
-interface AirtableReviewRecord {
-  id: string;
-  createdTime: string;
-  fields: {
-    guestName?: string;
-    avatar?: string;
-    rating?: number;
-    date?: string;
-    comment?: string;
-    propertyId?: string[] | string;
-  };
-}
-
-interface AirtablePropertyRecord {
-  id: string;
-  fields: {
-    title?: string;
-    description?: string;
-    price?: number;
-    location?: string;
-    neighborhood?: 'Maitama' | 'Asokoro' | 'Wuse II' | 'Jabi' | 'Garki';
-    bedrooms?: number;
-    bathrooms?: number;
-    guests?: number;
-    featured?: boolean;
-    images?: AirtableImage[] | string;
-    amenities?: string[] | string;
-  };
-}
+import { INITIAL_PROPERTIES, Property } from "../../data/properties";
+import { createClient } from "@/lib/supabase/server";
 
 export async function GET() {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!apiKey || !baseId) {
-    return NextResponse.json(
-      { error: "Airtable credentials are not configured in environment variables." },
-      { status: 500 }
-    );
-  }
-
   try {
-    // 1. Fetch all records from Properties Table
-    const propsRes = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Properties`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 10 }, // Cache on CDN for 10 seconds (ISR)
-      }
-    );
+    const supabase = await createClient();
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("properties")
+        .select("*")
+        .order("created_at", { ascending: false });
 
-    if (!propsRes.ok) {
-      const errText = await propsRes.text();
-      throw new Error(`Airtable Properties Fetch Error: ${errText}`);
+      if (!error && data && data.length > 0) {
+        const properties: Property[] = data.map((item: any) => ({
+          id: String(item.id),
+          title: item.title,
+          description: item.description || "",
+          price: Number(item.price),
+          cautionFee: item.caution_fee ? Number(item.caution_fee) : 0,
+          reservationFee: item.reservation_fee ? Number(item.reservation_fee) : 0,
+          location: item.location,
+          neighborhood: item.neighborhood,
+          bedrooms: item.bedrooms || 1,
+          bathrooms: item.bathrooms || 1,
+          guests: item.guests || 2,
+          rating: item.rating ? Number(item.rating) : 5.0,
+          reviewsCount: item.reviews_count || 0,
+          images: item.images || [],
+          amenities: item.amenities || [],
+          featured: Boolean(item.featured),
+          agentPhone: item.agent_phone || "07073537007",
+          googleMapsUrl: item.google_maps_url,
+          rooms: item.rooms || [],
+          reviews: [],
+        }));
+        return NextResponse.json(properties);
+      }
     }
-
-    const propsData = (await propsRes.json()) as { records: AirtablePropertyRecord[] };
-
-    // 2. Fetch all records from Reviews Table
-    const reviewsRes = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Reviews`,
-      {
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        next: { revalidate: 10 },
-      }
-    );
-
-    let reviewsDataList: AirtableReviewRecord[] = [];
-    if (reviewsRes.ok) {
-      const data = (await reviewsRes.json()) as { records: AirtableReviewRecord[] };
-      reviewsDataList = data.records || [];
-    }
-
-    // 3. Map properties and attach their corresponding reviews
-    const mappedProperties = propsData.records.map((record) => {
-      const fields = record.fields;
-
-      // Map Airtable attachments to array of image URLs
-      let images: string[] = [];
-      if (Array.isArray(fields.images)) {
-        images = fields.images.map((img) => img.url || img.thumbnails?.full?.url || "");
-      } else if (typeof fields.images === "string") {
-        images = [fields.images];
-      }
-      images = images.filter(Boolean);
-      if (images.length === 0) {
-        images = ["/images/maitama.png"];
-      }
-
-      // Map amenities list
-      let amenities: string[] = [];
-      if (Array.isArray(fields.amenities)) {
-        amenities = fields.amenities;
-      } else if (typeof fields.amenities === "string") {
-        amenities = fields.amenities.split(",").map((a) => a.trim());
-      }
-
-      // Filter and map reviews for this property
-      const matchedReviews = reviewsDataList
-        .filter((revRec) => {
-          const linkedPropIds = revRec.fields.propertyId;
-          if (Array.isArray(linkedPropIds)) {
-            return linkedPropIds.includes(record.id);
-          }
-          return linkedPropIds === record.id;
-        })
-        .map((revRec) => {
-          const revFields = revRec.fields;
-          return {
-            id: revRec.id,
-            guestName: revFields.guestName || "Anonymous Guest",
-            avatar: revFields.avatar || "G",
-            rating: Number(revFields.rating) || 5,
-            date: revFields.date || new Date(revRec.createdTime).toLocaleDateString("en-US", {
-              year: "numeric",
-              month: "long",
-              day: "numeric",
-            }),
-            comment: revFields.comment || "",
-          };
-        });
-
-      // Calculate rating statistics dynamically on the server
-      const reviewsCount = matchedReviews.length;
-      const sumRating = matchedReviews.reduce((sum, r) => sum + r.rating, 0);
-      const rating = reviewsCount > 0 ? parseFloat((sumRating / reviewsCount).toFixed(2)) : 5.0;
-
-      return {
-        id: record.id,
-        title: fields.title || "Abuja Shortlet",
-        description: fields.description || "",
-        price: Number(fields.price) || 80000,
-        location: fields.location || "",
-        neighborhood: fields.neighborhood || "Maitama",
-        bedrooms: Number(fields.bedrooms) || 1,
-        bathrooms: Number(fields.bathrooms) || 1,
-        guests: Number(fields.guests) || 2,
-        featured: fields.featured === true,
-        images,
-        amenities,
-        rating,
-        reviewsCount,
-        reviews: matchedReviews,
-      };
-    });
-
-    return NextResponse.json(mappedProperties);
-  } catch (error: unknown) {
-    const err = error as Error;
-    console.error("GET /api/properties error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to fetch properties from Airtable" },
-      { status: 500 }
-    );
+  } catch (err) {
+    console.warn("Supabase properties query fallback to initial static data:", err);
   }
+
+  return NextResponse.json(INITIAL_PROPERTIES);
 }
 
 export async function POST(request: Request) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!apiKey || !baseId) {
-    return NextResponse.json(
-      { error: "Airtable credentials are not configured in environment variables." },
-      { status: 500 }
-    );
-  }
-
   try {
     const body = await request.json();
-    const { title, description, price, location, neighborhood, bedrooms, bathrooms, guests, images, amenities } = body;
+    const id = body.id || "prop-" + Math.random().toString(36).substring(2, 9);
 
-    const newRecord = {
-      fields: {
-        title,
-        description,
-        price: Number(price),
-        location,
-        neighborhood,
-        bedrooms: Number(bedrooms),
-        bathrooms: Number(bathrooms),
-        guests: Number(guests),
-        featured: false,
-        images: Array.isArray(images) ? images.map((url: string) => ({ url })) : [],
-        amenities: Array.isArray(amenities) ? amenities : [],
-      },
-    };
+    const supabase = await createClient();
+    if (supabase) {
+      const dbPayload = {
+        id: String(id),
+        title: body.title,
+        description: body.description,
+        price: body.price,
+        caution_fee: body.cautionFee || 0,
+        reservation_fee: body.reservationFee || 0,
+        location: body.location,
+        neighborhood: body.neighborhood,
+        bedrooms: body.bedrooms || 1,
+        bathrooms: body.bathrooms || 1,
+        guests: body.guests || 2,
+        images: body.images || [],
+        amenities: body.amenities || [],
+        featured: body.featured || false,
+        agent_phone: body.agentPhone || "07073537007",
+        google_maps_url: body.googleMapsUrl || "",
+        rooms: body.rooms || [],
+      };
 
-    const response = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Properties`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(newRecord),
+      const { data, error } = await supabase
+        .from("properties")
+        .insert(dbPayload)
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Supabase property insert error:", error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
       }
-    );
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Airtable Properties Create Error: ${errText}`);
+      return NextResponse.json({ id: data.id, ...body, success: true });
     }
 
-    const createdRecord = (await response.json()) as { id: string };
-    return NextResponse.json({ id: createdRecord.id, success: true });
+    return NextResponse.json({ id, ...body, success: true });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("POST /api/properties error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to create property in Airtable" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-export async function DELETE(request: Request) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!apiKey || !baseId) {
-    return NextResponse.json(
-      { error: "Airtable credentials are not configured in environment variables." },
-      { status: 500 }
-    );
-  }
-
+export async function PATCH(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
+    const body = await request.json();
+    const { id, ...updates } = body;
 
     if (!id) {
-      return NextResponse.json({ error: "Missing record ID" }, { status: 400 });
+      return NextResponse.json({ error: "Property ID is required" }, { status: 400 });
     }
 
-    const response = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Properties/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    const supabase = await createClient();
+    if (supabase) {
+      const dbUpdates: Record<string, any> = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.description) dbUpdates.description = updates.description;
+      if (updates.price !== undefined) dbUpdates.price = updates.price;
+      if (updates.cautionFee !== undefined) dbUpdates.caution_fee = updates.cautionFee;
+      if (updates.reservationFee !== undefined) dbUpdates.reservation_fee = updates.reservationFee;
+      if (updates.location) dbUpdates.location = updates.location;
+      if (updates.neighborhood) dbUpdates.neighborhood = updates.neighborhood;
+      if (updates.images) dbUpdates.images = updates.images;
+      if (updates.amenities) dbUpdates.amenities = updates.amenities;
+      if (updates.rooms) dbUpdates.rooms = updates.rooms;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Airtable Properties Delete Error: ${errText}`);
+      const { error } = await supabase
+        .from("properties")
+        .update(dbUpdates)
+        .eq("id", String(id));
+
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
     }
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("DELETE /api/properties error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to delete property from Airtable" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }
 
-export async function PATCH(request: Request) {
-  const apiKey = process.env.AIRTABLE_API_KEY;
-  const baseId = process.env.AIRTABLE_BASE_ID;
-
-  if (!apiKey || !baseId) {
-    return NextResponse.json(
-      { error: "Airtable credentials are not configured in environment variables." },
-      { status: 500 }
-    );
-  }
-
+export async function DELETE(request: Request) {
   try {
-    const body = await request.json();
-    const { id, title, description, price, location, neighborhood, bedrooms, bathrooms, guests, images, amenities, featured } = body;
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
 
-    if (!id) {
-      return NextResponse.json({ error: "Missing record ID" }, { status: 400 });
-    }
-
-    // Build fields object dynamically
-    const fields: Record<string, string | number | boolean | string[] | Array<{ url: string }>> = {
-      title,
-      description,
-      price: Number(price),
-      location,
-      neighborhood,
-      bedrooms: Number(bedrooms),
-      bathrooms: Number(bathrooms),
-      guests: Number(guests),
-      featured: featured === true,
-      amenities: Array.isArray(amenities) ? amenities : [],
-    };
-
-    // If images are provided, convert them to Airtable's attachment format
-    if (Array.isArray(images)) {
-      fields.images = images.map((url: string) => ({ url }));
-    }
-
-    const response = await fetch(
-      `https://api.airtable.com/v0/${baseId}/Properties/${id}`,
-      {
-        method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ fields }),
+    if (id) {
+      const supabase = await createClient();
+      if (supabase) {
+        await supabase.from("properties").delete().eq("id", String(id));
       }
-    );
-
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(`Airtable Properties Update Error: ${errText}`);
     }
 
-    const updatedRecord = await response.json();
-    return NextResponse.json({ id: updatedRecord.id, success: true });
+    return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const err = error as Error;
-    console.error("PATCH /api/properties error:", err);
-    return NextResponse.json(
-      { error: err.message || "Failed to update property in Airtable" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: err.message }, { status: 500 });
   }
 }

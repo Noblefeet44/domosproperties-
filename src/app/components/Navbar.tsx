@@ -1,13 +1,13 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import { useApp } from "../context/AppContext";
 
 export const Navbar: React.FC = () => {
   const {
     activeView,
     setActiveView,
-    wishlist,
     bookings,
     darkMode,
     toggleDarkMode,
@@ -16,73 +16,78 @@ export const Navbar: React.FC = () => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
   const activeBookingsCount = bookings.filter((b) => b.status === "confirmed").length;
-  const wishlistCount = wishlist.length;
 
   return (
-    <nav className="sticky top-0 z-40 w-full border-b border-stone-200/50 dark:border-zinc-800/50 glass shadow-xs px-4 sm:px-8 py-3.5 flex items-center justify-between">
+    <nav className="sticky top-0 z-40 w-full border-b border-sky-200/50 dark:border-slate-800/60 glass shadow-xs px-4 sm:px-8 py-3 flex items-center justify-between">
       {/* Brand Logo */}
       <div 
-        className="flex items-center gap-2 cursor-pointer group"
+        className="flex items-center gap-2.5 cursor-pointer group"
         onClick={() => setActiveView("explore")}
       >
-        <div className="w-8 h-8 rounded-lg gold-bg-gradient flex items-center justify-center text-white font-bold shadow-md transition-transform group-hover:scale-105">
-          A
+        <div className="w-9 h-9 rounded-xl gold-bg-gradient flex items-center justify-center text-white font-black text-sm shadow-md transition-transform group-hover:scale-105">
+          DP
         </div>
-        <span className="text-xl font-bold tracking-tight font-sans">
-          Abuja<span className="gold-gradient-text">Shortlet</span>
-        </span>
+        <div className="flex flex-col">
+          <span className="text-base sm:text-lg font-black tracking-tight leading-tight">
+            DOMOS <span className="gold-gradient-text">PROPERTY</span>
+          </span>
+          <span className="text-[9px] font-extrabold uppercase tracking-widest text-sky-600 dark:text-sky-400">
+            GLOBAL LIMITED • EKPOMA
+          </span>
+        </div>
       </div>
 
       {/* Main Nav Links */}
-      <div className="hidden md:flex items-center gap-1.5 text-sm font-medium">
+      <div className="hidden md:flex items-center gap-2 text-xs font-semibold">
         <button
           onClick={() => setActiveView("explore")}
-          className={`px-4 py-2 rounded-full transition-all duration-200 ${
+          className={`px-4 py-2 rounded-full transition-all duration-200 cursor-pointer ${
             activeView === "explore"
-              ? "bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 shadow-xs"
-              : "text-stone-600 hover:text-stone-950 dark:text-zinc-400 dark:hover:text-zinc-50 hover:bg-stone-100/50 dark:hover:bg-zinc-800/30"
+              ? "gold-bg-gradient text-white shadow-md font-bold"
+              : "text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 hover:bg-sky-50/60 dark:hover:bg-slate-800/40"
           }`}
         >
-          Explore
+          Explore Hostels
         </button>
         <button
-          onClick={() => setActiveView("wishlist")}
-          className={`px-4 py-2 rounded-full transition-all duration-200 flex items-center gap-1.5 ${
-            activeView === "wishlist"
-              ? "bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 shadow-xs"
-              : "text-stone-600 hover:text-stone-950 dark:text-zinc-400 dark:hover:text-zinc-50 hover:bg-stone-100/50 dark:hover:bg-zinc-800/30"
+          onClick={() => setActiveView("about")}
+          className={`px-4 py-2 rounded-full transition-all duration-200 cursor-pointer ${
+            activeView === "about"
+              ? "gold-bg-gradient text-white shadow-md font-bold"
+              : "text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 hover:bg-sky-50/60 dark:hover:bg-slate-800/40"
           }`}
         >
-          Wishlist
-          {wishlistCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full gold-bg-gradient text-[10px] font-bold text-white">
-              {wishlistCount}
-            </span>
-          )}
+          About Us
         </button>
         <button
-          onClick={() => setActiveView("bookings")}
-          className={`px-4 py-2 rounded-full transition-all duration-200 flex items-center gap-1.5 ${
-            activeView === "bookings"
-              ? "bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 shadow-xs"
-              : "text-stone-600 hover:text-stone-950 dark:text-zinc-400 dark:hover:text-zinc-50 hover:bg-stone-100/50 dark:hover:bg-zinc-800/30"
+          onClick={() => setActiveView("faq")}
+          className={`px-4 py-2 rounded-full transition-all duration-200 cursor-pointer ${
+            activeView === "faq"
+              ? "gold-bg-gradient text-white shadow-md font-bold"
+              : "text-slate-600 hover:text-sky-600 dark:text-slate-300 dark:hover:text-sky-400 hover:bg-sky-50/60 dark:hover:bg-slate-800/40"
           }`}
         >
-          My Bookings
-          {activeBookingsCount > 0 && (
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white">
-              {activeBookingsCount}
-            </span>
-          )}
+          FAQs
         </button>
       </div>
 
       {/* Right Controls */}
       <div className="flex items-center gap-3">
+        {/* Direct WhatsApp Callout Button */}
+        <a
+          href="https://wa.me/2347073537007?text=Hello%20DOMOS%20PROPERTY%20GLOBAL%20LIMITED%2C%20I%20want%20to%20inquire%20about%20a%20hostel%20room%20in%20Ekpoma."
+          target="_blank"
+          rel="noopener noreferrer"
+          className="hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-xs transition-transform hover:scale-105 shadow-sm"
+        >
+          <span>💬</span>
+          <span>WhatsApp 07073537007</span>
+        </a>
+
         {/* Toggle Theme */}
         <button
           onClick={toggleDarkMode}
-          className="p-2.5 rounded-full border border-stone-200/60 dark:border-zinc-800/60 hover:bg-stone-100/50 dark:hover:bg-zinc-800/40 text-stone-600 dark:text-zinc-300 transition-colors"
+          className="p-2 rounded-full border border-sky-200/80 dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-slate-800 text-sky-600 dark:text-sky-400 transition-colors cursor-pointer"
           aria-label="Toggle dark mode"
         >
           {darkMode ? (
@@ -96,27 +101,16 @@ export const Navbar: React.FC = () => {
           )}
         </button>
 
-        {/* Portal Switch Button */}
-        <a
-          href="/admin"
-          className="hidden sm:flex text-xs font-semibold px-4.5 py-2.5 rounded-full border border-gold/40 hover:border-gold hover:bg-gold/10 text-gold transition-all duration-300 items-center gap-1.5"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-3.5 h-3.5">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 21v-4.875c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125V21m0 0h4.5V3.545M12.75 21h7.5V10.75M2.25 21h1.5m18 0h-18M2.25 9l4.5-1.636M18.75 3l-1.5.545m0 6.205 3 1m1.5-1.5-3-1m-5.01 4.75h-.01M10.5 8.25h-.01M10.5 12h-.01M10.5 15.75h-.01M1.5 21h1.5m18 0h-1.5" />
-          </svg>
-          Admin Portal
-        </a>
-
         {/* User Account / Dropdown */}
         <div className="relative">
           <button
             onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="flex items-center gap-1.5 p-1 rounded-full border border-stone-200 dark:border-zinc-800 hover:shadow-xs transition-shadow"
+            className="flex items-center gap-1.5 p-1 rounded-full border border-sky-200 dark:border-slate-800 hover:shadow-xs transition-shadow cursor-pointer"
           >
-            <div className="w-8 h-8 rounded-full bg-stone-200 dark:bg-zinc-800 flex items-center justify-center font-bold text-stone-700 dark:text-zinc-300 text-xs">
-              AI
+            <div className="w-8 h-8 rounded-full gold-bg-gradient text-white flex items-center justify-center font-bold text-xs">
+              DP
             </div>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-stone-500 mr-1.5">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 text-slate-500 mr-1">
               <path fillRule="evenodd" d="M5.22 8.22a.75.75 0 0 1 1.06 0L10 11.94l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 9.28a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
             </svg>
           </button>
@@ -127,54 +121,57 @@ export const Navbar: React.FC = () => {
                 className="fixed inset-0 z-30" 
                 onClick={() => setDropdownOpen(false)}
               />
-              <div className="absolute right-0 mt-2.5 w-52 rounded-2xl glass border border-stone-200/60 dark:border-zinc-800/60 shadow-lg p-2.5 z-40 animate-in fade-in slide-in-from-top-2 duration-150">
-                <div className="px-3.5 py-2.5 mb-1.5 border-b border-stone-200/50 dark:border-zinc-800/50">
-                  <p className="text-xs text-stone-400 dark:text-zinc-500">Logged in as</p>
-                  <p className="text-sm font-semibold text-stone-800 dark:text-zinc-200 truncate">Alhaji Ibrahim</p>
+              <div className="absolute right-0 mt-2.5 w-60 rounded-2xl glass border border-sky-200 dark:border-slate-800 shadow-xl p-2.5 z-40 animate-in fade-in slide-in-from-top-2 duration-150">
+                <div className="px-3.5 py-2.5 mb-1.5 border-b border-sky-100 dark:border-slate-800">
+                  <p className="text-[10px] text-slate-400 uppercase tracking-wider font-extrabold">DOMOS PROPERTY</p>
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-100">Ekpoma Hostel Portal</p>
                 </div>
+
                 <button
                   onClick={() => {
                     setActiveView("explore");
                     setDropdownOpen(false);
                   }}
-                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-stone-100/60 dark:hover:bg-zinc-800/40 text-stone-700 dark:text-zinc-300 transition-colors"
+                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-sky-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
-                  Explore Apartments
+                  🏫 Explore All Hostels
                 </button>
                 <button
                   onClick={() => {
-                    setActiveView("wishlist");
+                    setActiveView("about");
                     setDropdownOpen(false);
                   }}
-                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-stone-100/60 dark:hover:bg-zinc-800/40 text-stone-700 dark:text-zinc-300 transition-colors flex justify-between items-center"
+                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-sky-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
-                  My Wishlist
-                  {wishlistCount > 0 && (
-                    <span className="h-4.5 min-w-4.5 px-1.5 rounded-full bg-gold/20 text-gold text-[10px] font-bold flex items-center justify-center">
-                      {wishlistCount}
-                    </span>
-                  )}
+                  ℹ️ About DOMOS PROPERTY
                 </button>
                 <button
                   onClick={() => {
-                    setActiveView("bookings");
+                    setActiveView("faq");
                     setDropdownOpen(false);
                   }}
-                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-stone-100/60 dark:hover:bg-zinc-800/40 text-stone-700 dark:text-zinc-300 transition-colors flex justify-between items-center"
+                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-medium hover:bg-sky-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
                 >
-                  My Bookings
-                  {activeBookingsCount > 0 && (
-                    <span className="h-4.5 min-w-4.5 px-1.5 rounded-full bg-emerald-500/20 text-emerald-500 text-[10px] font-bold flex items-center justify-center">
-                      {activeBookingsCount}
-                    </span>
-                  )}
+                  ❓ Frequently Asked Questions
                 </button>
-                <a
-                  href="/admin"
-                  className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-semibold hover:bg-stone-100/60 dark:hover:bg-zinc-800/40 text-gold transition-colors md:hidden block"
-                >
-                  Admin Portal
-                </a>
+
+                <div className="border-t border-sky-100 dark:border-slate-800 mt-2 pt-2 space-y-1">
+                  <a
+                    href="https://wa.me/2347073537007?text=Hello%20DOMOS%20PROPERTY%20GLOBAL%20LIMITED%2C%20I%20want%20to%20speak%20with%20an%20agent."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-bold text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 flex items-center gap-1.5"
+                  >
+                    💬 Contact Landlord / Agent
+                  </a>
+                  <Link
+                    href="/admin"
+                    onClick={() => setDropdownOpen(false)}
+                    className="w-full text-left px-3.5 py-2 rounded-lg text-xs font-extrabold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-slate-800 flex items-center gap-1.5 cursor-pointer"
+                  >
+                    🔒 Admin Portal & Applications
+                  </Link>
+                </div>
               </div>
             </>
           )}
@@ -183,3 +180,4 @@ export const Navbar: React.FC = () => {
     </nav>
   );
 };
+
