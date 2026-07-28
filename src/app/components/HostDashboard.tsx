@@ -5,7 +5,7 @@ import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 
 export const HostDashboard: React.FC = () => {
-  const { currentAgent, properties, addProperty, bookings } = useApp();
+  const { currentAgent, properties, hotels, cars, lands, addProperty, bookings } = useApp();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -39,18 +39,33 @@ export const HostDashboard: React.FC = () => {
 
   const [notification, setNotification] = useState("");
 
-  // Calculate earnings for current agent
-  const hostProperties = currentAgent
-    ? properties.filter(
-        (p) =>
-          p.agentId === currentAgent.id ||
-          (p.agentPhone && currentAgent.whatsapp && p.agentPhone === currentAgent.whatsapp)
-      )
-    : properties;
+  // Calculate listings & earnings for current agent across all 4 categories
+  const isAgentItem = (item: { agentId?: string; agentPhone?: string }) => {
+    if (!currentAgent) return false;
+    if (currentAgent.role === "super_admin") return true;
+    if (item.agentId && item.agentId === currentAgent.id) return true;
+    if (item.agentPhone && currentAgent.whatsapp && item.agentPhone === currentAgent.whatsapp) return true;
+    return false;
+  };
+
+  const hostProperties = currentAgent ? properties.filter(isAgentItem) : properties;
+  const hostHotels = currentAgent ? hotels.filter(isAgentItem) : hotels;
+  const hostCars = currentAgent ? cars.filter(isAgentItem) : cars;
+  const hostLands = currentAgent ? lands.filter(isAgentItem) : lands;
+
   const totalHostApartments = hostProperties.length;
+  const totalHostHotels = hostHotels.length;
+  const totalHostCars = hostCars.length;
+  const totalHostLands = hostLands.length;
+  const totalHostListings = totalHostApartments + totalHostHotels + totalHostCars + totalHostLands;
   
   // Calculate host earnings from reservations on their properties
-  const hostPropIds = new Set(hostProperties.map((p) => p.id));
+  const hostPropIds = new Set([
+    ...hostProperties.map((p) => p.id),
+    ...hostHotels.map((h) => h.id),
+    ...hostCars.map((c) => c.id),
+    ...hostLands.map((l) => l.id),
+  ]);
   const confirmedReservations = bookings.filter(
     (b) =>
       b.status === "confirmed" &&

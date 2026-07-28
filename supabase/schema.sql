@@ -231,52 +231,10 @@ CREATE POLICY "Allow admin read inquiries" ON public.inquiries FOR SELECT USING 
 CREATE POLICY "Allow public read access to reviews" ON public.reviews FOR SELECT USING (true);
 CREATE POLICY "Allow public insert to reviews" ON public.reviews FOR INSERT WITH CHECK (true);
 
--- ==========================================
 -- SEED INITIAL AGENT PROFILES & DATA
 -- ==========================================
 
 -- 0. AGENT SEED
-INSERT INTO public.agent_profiles (id, name, email, password_hash, whatsapp, office_address, cac_number, profile_image, status, role)
-VALUES
-(
-  'agent-main',
-  'DOMOS PROPERTY GLOBAL LIMITED (Headquarters)',
-  'info@domosproperties.com',
-  'Admin@password',
-  '07073537007',
-  'Suit 4, DOMOS Plaza, University Road, Ekpoma, Edo State',
-  'RC: 7482910',
-  '/images/ehis_hostel.png',
-  'approved',
-  'super_admin'
-),
-(
-  'agent-ehis',
-  'Ehis Real Estate & Management Consult',
-  'ehis@domosproperties.com',
-  'Password123',
-  '08012345678',
-  'No. 12 AAU Main Gate Expressway, Ekpoma, Edo State',
-  'RC: 3948120',
-  '/images/treasure_hostel.png',
-  'approved',
-  'agent'
-)
-ON CONFLICT (id) DO NOTHING;
-
--- 1. PROPERTIES SEED WITH AGENT_ID
-INSERT INTO public.properties (id, agent_id, title, description, price, caution_fee, reservation_fee, location, neighborhood, bedrooms, bathrooms, guests, rating, reviews_count, images, amenities, featured, agent_phone, google_maps_url, rooms)
-VALUES 
-(
-  '1',
-  'agent-main',
-  'Ehis Executive Student Apartments',
-  'Ultra-modern, highly secured student residence located right next to AAU Main Gate in Ekpoma. Features 24/7 security guard, uninterrupted borehole water supply, pre-paid individual meters, tiled floors, pop ceilings, and spacious balconies for academic comfort.',
-  350000,
-  30000,
-  20000,
-  'AAU Main Gate, Ekpoma, Edo State',
-  'AAU Main Gate',
   1,
   1,
   2,

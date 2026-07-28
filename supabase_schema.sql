@@ -86,7 +86,7 @@ CREATE TABLE cars (
     id TEXT PRIMARY KEY,
     title TEXT NOT NULL,
     description TEXT,
-    listing_type TEXT DEFAULT 'rent' CHECK (listing_type IN ('rent', 'buy')),
+    listing_type TEXT DEFAULT 'rent' CHECK (listing_type IN ('rent', 'sale', 'buy')),
     price NUMERIC NOT NULL DEFAULT 0,
     make TEXT NOT NULL,
     model TEXT NOT NULL,
@@ -231,30 +231,7 @@ CREATE POLICY "Public Insert Inquiries" ON inquiries FOR INSERT WITH CHECK (true
 CREATE POLICY "Public Read Reviews" ON reviews FOR SELECT USING (true);
 CREATE POLICY "Public Insert Reviews" ON reviews FOR INSERT WITH CHECK (true);
 
--- 12. INITIAL SEED DATA
--- Seed Agents
+-- 12. INITIAL SUPER-ADMIN AGENT
 INSERT INTO agent_profiles (id, name, email, password_hash, whatsapp, office_address, cac_number, profile_image, status, role) VALUES
-('agent-main', 'DOMOS PROPERTY GLOBAL LIMITED (Headquarters)', 'info@domosproperties.com', 'Admin@password', '07073537007', 'Suit 4, DOMOS Plaza, University Road, Ekpoma, Edo State', 'RC: 7482910', '/images/ehis_hostel.png', 'approved', 'super_admin'),
-('agent-ehis', 'Ehis Real Estate & Management Consult', 'ehis.consult@gmail.com', 'Ehis@123', '08034567890', 'No. 12 AAU Main Gate Expressway, Ekpoma, Edo State', 'RC: 3948120', '/images/treasure_hostel.png', 'approved', 'agent')
-ON CONFLICT (id) DO NOTHING;
-
--- Seed Properties
-INSERT INTO properties (id, title, description, price, caution_fee, reservation_fee, agency_fee, inspection_fee, legal_fee, location, neighborhood, bedrooms, bathrooms, guests, rating, reviews_count, images, amenities, featured, agent_id, agent_phone, google_maps_url) VALUES
-('1', 'Self-Contained Executive Single Room Lodge', 'Newly built self-contained lodge with 24/7 running water, private balcony, security wire, and prepaid meter. Walking distance to AAU Main Gate.', 350000, 30000, 20000, 20000, 5000, 20000, 'AAU Main Gate Area, Ekpoma, Edo State', 'AAU Main Gate', 1, 1, 2, 4.9, 18, '["/images/ehis_hostel.png", "/images/treasure_hostel.png"]'::jsonb, '["24/7 Running Water", "Prepaid Meter", "Security Guard", "Balcony"]'::jsonb, true, 'agent-main', '07073537007', 'https://maps.google.com'),
-('2', 'Luxury 2-Bedroom Student Shared Flat', 'Spacious two bedroom flat with ensuite bathrooms, modern POP ceiling, tiled floors, and ample parking space.', 550000, 50000, 30000, 30000, 5000, 25000, 'Benin-Auchi Expressway, Ekpoma, Edo State', 'Benin-Auchi Expressway', 2, 2, 4, 4.8, 12, '["/images/treasure_hostel.png", "/images/elite_residence.png"]'::jsonb, '["Ensuite Bathrooms", "Tiled Floors", "POP Ceiling", "Car Park"]'::jsonb, true, 'agent-ehis', '08034567890', 'https://maps.google.com')
-ON CONFLICT (id) DO NOTHING;
-
--- Seed Hotels
-INSERT INTO hotels (id, title, description, price_per_night, location, neighborhood, star_rating, reviews_count, images, amenities, featured, agent_id, agent_phone) VALUES
-('hotel-1', 'DOMOS Luxury Suites & Hotel', 'Premium hospitality suite featuring air conditioning, high speed Wi-Fi, 24/7 power generator, restaurant, and bar.', 25000, 'University Road, Ekpoma, Edo State', 'University Road', 4.8, 34, '["/images/elite_residence.png"]'::jsonb, '["Air Conditioning", "Free High-Speed Wi-Fi", "24/7 Power Generator", "Swimming Pool"]'::jsonb, true, 'agent-main', '07073537007')
-ON CONFLICT (id) DO NOTHING;
-
--- Seed Cars
-INSERT INTO cars (id, title, description, listing_type, price, make, model, year, transmission, fuel_type, seats, mileage, condition, location, images, features, featured, agent_id, agent_phone) VALUES
-('car-1', '2020 Toyota Camry XLE (Full Option)', 'Clean executive sedan available for daily rental or chauffeur services in Ekpoma and Benin City.', 'rent', 35000, 'Toyota', 'Camry XLE', 2020, 'Automatic', 'Petrol', 5, '34,000 km', 'Excellent', 'Ekpoma, Edo State', '["/images/royal_villa.png"]'::jsonb, '["Leather Interior", "Reverse Camera", "Bluetooth", "Chauffeur Available"]'::jsonb, true, 'agent-ehis', '08034567890')
-ON CONFLICT (id) DO NOTHING;
-
--- Seed Lands
-INSERT INTO lands (id, title, description, price, size, title_document, zoning, status, location, neighborhood, images, features, featured, agent_id, agent_phone) VALUES
-('land-1', '100ft x 100ft Prime Commercial Plot', 'Prime commercial land plot along Benin-Auchi Expressway, perfect for hotel, hostel, or fuel station development.', 12000000, '100ft x 100ft', 'Deed of Conveyance & Survey Plan', 'Commercial', 'dry_land', 'Benin-Auchi Expressway, Ekpoma, Edo State', 'Expressway Zone', '["/images/treasure_hostel.png"]'::jsonb, '["Dry Land", "Direct Expressway Facing", "Surveyed"]'::jsonb, true, 'agent-main', '07073537007')
+('agent-main', 'DOMOS PROPERTY GLOBAL LIMITED (Headquarters)', 'domospropertygloballimited@gmail.com', 'Admin@password', '07073537007', 'Suit 4, DOMOS Plaza, University Road, Ekpoma, Edo State', 'RC: 7482910', '', 'approved', 'super_admin')
 ON CONFLICT (id) DO NOTHING;

@@ -1220,9 +1220,48 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Description</label>
-                <textarea rows={3} value={propDesc} onChange={(e) => setPropDesc(e.target.value)} placeholder="Apartment details and features..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              {/* APARTMENT AMENITIES CHECKLIST */}
+              <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 space-y-3">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-700 pb-2">
+                  ✨ Select Apartment Amenities ({propAmenities.length} Selected)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    "24/7 Industrial Borehole Water",
+                    "Prepaid Electricity Meter (PHCN)",
+                    "24/7 Gated Security Guard",
+                    "Solar Power & Inverter Backup",
+                    "Standby Generator Backup",
+                    "Tiled Flooring & POP Ceilings",
+                    "Fenced Compound & Security Gate",
+                    "Reading Study Desk & Chair",
+                    "Daily Waste Management",
+                    "Ample Car & Bike Parking",
+                    "Kitchenette with Sink & Cabinets",
+                    "En-Suite Bathroom & Water Heater",
+                    "Burglar Proofed Windows",
+                    "Close to Campus Shuttle Bus Stop"
+                  ].map((amenity) => {
+                    const isSelected = propAmenities.includes(amenity);
+                    return (
+                      <label key={amenity} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            if (isSelected) {
+                              setPropAmenities((prev) => prev.filter((a) => a !== amenity));
+                            } else {
+                              setPropAmenities((prev) => [...prev, amenity]);
+                            }
+                          }}
+                          className="rounded border-slate-300 text-amber-500 focus:ring-amber-500 w-4 h-4"
+                        />
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{amenity}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
@@ -1427,6 +1466,49 @@ export default function AdminPage() {
                     ))}
                   </div>
                 )}
+              </div>
+
+              {/* HOTEL AMENITIES CHECKLIST */}
+              <div className="p-4 rounded-2xl bg-amber-50/60 dark:bg-slate-800/60 border border-amber-200/80 dark:border-slate-700 space-y-3">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-amber-800 dark:text-amber-300 block border-b border-amber-200/60 dark:border-slate-700 pb-2">
+                  ✨ Select Hotel Amenities ({hotelAmenities.length} Selected)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    "24/7 Air Conditioning",
+                    "Free High-Speed Fiber Wi-Fi",
+                    "Swimming Pool & Pool Bar",
+                    "Complimentary Hot Breakfast",
+                    "Fitness Gym Center",
+                    "24/7 Standby Generator Backup",
+                    "Solar Power Backup",
+                    "Smart TV with Premium DSTV",
+                    "Cocktail Lounge & Restaurant",
+                    "24/7 Gated Security Guard",
+                    "Free Ample Parking",
+                    "Airport / Campus Shuttle Service",
+                    "24-Hour Room Service"
+                  ].map((amenity) => {
+                    const isSelected = hotelAmenities.includes(amenity);
+                    return (
+                      <label key={amenity} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-amber-100/50 dark:hover:bg-slate-700/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            if (isSelected) {
+                              setHotelAmenities((prev) => prev.filter((a) => a !== amenity));
+                            } else {
+                              setHotelAmenities((prev) => [...prev, amenity]);
+                            }
+                          }}
+                          className="rounded border-slate-300 text-amber-500 focus:ring-amber-500 w-4 h-4"
+                        />
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{amenity}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <div>
