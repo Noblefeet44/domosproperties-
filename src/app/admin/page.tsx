@@ -1237,6 +1237,11 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Apartment Description *</label>
+                <textarea rows={3} required value={propDesc} onChange={(e) => setPropDesc(e.target.value)} placeholder="Provide full details about the apartment, water supply, security, rules, proximity to campus..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+
               {/* APARTMENT AMENITIES CHECKLIST */}
               <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/70 space-y-3">
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200 block border-b border-slate-200 dark:border-slate-700 pb-2">
