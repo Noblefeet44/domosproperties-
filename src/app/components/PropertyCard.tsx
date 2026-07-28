@@ -112,7 +112,7 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
             onClick={() => setSelectedProperty(property)}
             className="text-xs font-bold px-4 py-2.5 rounded-xl gold-bg-gradient text-white hover:opacity-95 transition-all shadow-md cursor-pointer flex items-center gap-1"
           >
-            <span>Book Now</span>
+            <span>Inquire</span>
             <span className="text-[10px]">→</span>
           </button>
         </div>

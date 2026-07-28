@@ -5,7 +5,7 @@ import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 
 export const HostDashboard: React.FC = () => {
-  const { properties, addProperty, bookings } = useApp();
+  const { currentAgent, properties, addProperty, bookings } = useApp();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -39,12 +39,23 @@ export const HostDashboard: React.FC = () => {
 
   const [notification, setNotification] = useState("");
 
-  // Calculate earnings
-  const hostProperties = properties;
+  // Calculate earnings for current agent
+  const hostProperties = currentAgent
+    ? properties.filter(
+        (p) =>
+          p.agentId === currentAgent.id ||
+          (p.agentPhone && currentAgent.whatsapp && p.agentPhone === currentAgent.whatsapp)
+      )
+    : properties;
   const totalHostApartments = hostProperties.length;
   
-  // Calculate mock host earnings from reservations
-  const confirmedReservations = bookings.filter(b => b.status === "confirmed");
+  // Calculate host earnings from reservations on their properties
+  const hostPropIds = new Set(hostProperties.map((p) => p.id));
+  const confirmedReservations = bookings.filter(
+    (b) =>
+      b.status === "confirmed" &&
+      (b.agentId === currentAgent?.id || hostPropIds.has(b.propertyId))
+  );
   const totalEarnings = confirmedReservations.reduce((sum, res) => sum + res.totalPrice, 0);
 
   const handleAmenityChange = (amenity: string) => {

@@ -21,6 +21,7 @@ const setMemoryProperties = (props: Property[]) => {
 
 export async function GET() {
   try {
+    const currentMemory = getMemoryProperties();
     const supabase = await createClient();
     if (supabase) {
       const { data, error } = await supabase
@@ -29,33 +30,44 @@ export async function GET() {
         .order("created_at", { ascending: false });
 
       if (!error && data && data.length > 0) {
-        const properties: Property[] = data.map((item: any) => ({
-          id: String(item.id),
-          title: item.title,
-          description: item.description || "",
-          price: Number(item.price),
-          cautionFee: item.caution_fee ? Number(item.caution_fee) : undefined,
-          reservationFee: item.reservation_fee ? Number(item.reservation_fee) : undefined,
-          agencyFee: item.agency_fee ? Number(item.agency_fee) : undefined,
-          inspectionFee: item.inspection_fee ? Number(item.inspection_fee) : undefined,
-          legalFee: item.legal_fee ? Number(item.legal_fee) : undefined,
-          location: item.location,
-          neighborhood: item.neighborhood,
-          bedrooms: item.bedrooms || 1,
-          bathrooms: item.bathrooms || 1,
-          guests: item.guests || 2,
-          rating: item.rating ? Number(item.rating) : 5.0,
-          reviewsCount: item.reviews_count || 0,
-          images: item.images || [],
-          amenities: item.amenities || [],
-          featured: Boolean(item.featured),
-          agentPhone: item.agent_phone || "07073537007",
-          googleMapsUrl: item.google_maps_url,
-          rooms: item.rooms || [],
-          reviews: [],
-        }));
-        setMemoryProperties(properties);
-        return NextResponse.json(properties);
+        const fetchedIds = new Set(data.map((item: any) => String(item.id)));
+        
+        const propertiesFromDb: Property[] = data.map((item: any) => {
+          const memProp = currentMemory.find((p) => p.id === String(item.id));
+          return {
+            id: String(item.id),
+            title: item.title,
+            description: item.description || "",
+            price: Number(item.price),
+            cautionFee: item.caution_fee !== undefined && item.caution_fee !== null ? Number(item.caution_fee) : memProp?.cautionFee,
+            reservationFee: item.reservation_fee !== undefined && item.reservation_fee !== null ? Number(item.reservation_fee) : memProp?.reservationFee,
+            agencyFee: item.agency_fee !== undefined && item.agency_fee !== null ? Number(item.agency_fee) : memProp?.agencyFee,
+            inspectionFee: item.inspection_fee !== undefined && item.inspection_fee !== null ? Number(item.inspection_fee) : memProp?.inspectionFee,
+            legalFee: item.legal_fee !== undefined && item.legal_fee !== null ? Number(item.legal_fee) : memProp?.legalFee,
+            location: item.location,
+            neighborhood: item.neighborhood,
+            bedrooms: item.bedrooms || 1,
+            bathrooms: item.bathrooms || 1,
+            guests: item.guests || 2,
+            rating: item.rating ? Number(item.rating) : 5.0,
+            reviewsCount: item.reviews_count || 0,
+            images: item.images || [],
+            amenities: item.amenities || [],
+            featured: Boolean(item.featured),
+            agentPhone: item.agent_phone || "07073537007",
+            agentId: item.agent_id || memProp?.agentId,
+            googleMapsUrl: item.google_maps_url,
+            rooms: item.rooms || [],
+            reviews: memProp?.reviews || [],
+          };
+        });
+
+        // Retain any memory-only properties created during runtime
+        const memoryOnlyProperties = currentMemory.filter((p) => !fetchedIds.has(p.id));
+        const mergedProperties = [...propertiesFromDb, ...memoryOnlyProperties];
+        
+        setMemoryProperties(mergedProperties);
+        return NextResponse.json(mergedProperties);
       }
     }
   } catch (err) {
@@ -73,6 +85,11 @@ export async function POST(request: Request) {
     const newProperty: Property = {
       ...body,
       id: String(id),
+      cautionFee: body.cautionFee !== undefined ? Number(body.cautionFee) : undefined,
+      reservationFee: body.reservationFee !== undefined ? Number(body.reservationFee) : undefined,
+      agencyFee: body.agencyFee !== undefined ? Number(body.agencyFee) : undefined,
+      inspectionFee: body.inspectionFee !== undefined ? Number(body.inspectionFee) : undefined,
+      legalFee: body.legalFee !== undefined ? Number(body.legalFee) : undefined,
       rating: body.rating || 5.0,
       reviewsCount: body.reviewsCount || 0,
       featured: body.featured || false,
@@ -86,7 +103,7 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
     if (supabase) {
-      const dbPayload = {
+      const dbPayload: Record<string, any> = {
         id: String(id),
         title: body.title,
         description: body.description,
@@ -104,6 +121,7 @@ export async function POST(request: Request) {
         images: body.images || [],
         amenities: body.amenities || [],
         featured: body.featured || false,
+        agent_id: body.agentId || body.agent_id || null,
         agent_phone: body.agentPhone || "07073537007",
         google_maps_url: body.googleMapsUrl || "",
         rooms: body.rooms || [],
@@ -116,7 +134,21 @@ export async function POST(request: Request) {
         .single();
 
       if (error) {
-        console.error("Supabase property insert error:", error);
+        console.warn("Supabase insert initial payload error (retrying standard fields):", error.message);
+        // Fallback insert without extra fee columns if DB schema doesn't have them yet
+        delete dbPayload.agency_fee;
+        delete dbPayload.inspection_fee;
+        delete dbPayload.legal_fee;
+
+        const { data: fallbackData } = await supabase
+          .from("properties")
+          .insert(dbPayload)
+          .select()
+          .single();
+
+        if (fallbackData) {
+          return NextResponse.json({ ...newProperty, id: String(fallbackData.id), success: true });
+        }
       } else if (data) {
         return NextResponse.json({ ...newProperty, id: String(data.id), success: true });
       }
@@ -160,10 +192,23 @@ export async function PATCH(request: Request) {
       if (updates.amenities) dbUpdates.amenities = updates.amenities;
       if (updates.rooms) dbUpdates.rooms = updates.rooms;
 
-      await supabase
+      const { error } = await supabase
         .from("properties")
         .update(dbUpdates)
         .eq("id", String(id));
+
+      if (error) {
+        console.warn("Supabase update error (retrying standard fields):", error.message);
+        // Fallback update without custom fee columns if DB schema cache is missing them
+        delete dbUpdates.agency_fee;
+        delete dbUpdates.inspection_fee;
+        delete dbUpdates.legal_fee;
+
+        await supabase
+          .from("properties")
+          .update(dbUpdates)
+          .eq("id", String(id));
+      }
     }
 
     return NextResponse.json({ success: true });

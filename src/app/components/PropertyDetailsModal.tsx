@@ -6,7 +6,7 @@ import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 
 export const PropertyDetailsModal: React.FC = () => {
-  const { properties, selectedProperty, setSelectedProperty, addBooking } = useApp();
+  const { properties, allAgents, selectedProperty, setSelectedProperty, addBooking } = useApp();
   const modalContainerRef = useRef<HTMLDivElement>(null);
   
   const [step, setStep] = useState<"details" | "apply" | "payment" | "success">("details");
@@ -17,7 +17,7 @@ export const PropertyDetailsModal: React.FC = () => {
   const [whatsapp, setWhatsapp] = useState("");
   const [propertyType, setPropertyType] = useState("Self-Contained Single Room Lodge");
   const [preferredLocation, setPreferredLocation] = useState("AAU Main Gate Area");
-  const [occupation, setOccupation] = useState("Undergraduate Student");
+  const [occupation, setOccupation] = useState("");
   const [agreeInspectionFee, setAgreeInspectionFee] = useState(false);
   const [moveInDate, setMoveInDate] = useState("");
 
@@ -46,7 +46,7 @@ export const PropertyDetailsModal: React.FC = () => {
       setWhatsapp("");
       setPropertyType("Self-Contained Single Room Lodge");
       setPreferredLocation(selectedProperty.neighborhood || "AAU Main Gate Area");
-      setOccupation("Undergraduate Student");
+      setOccupation("");
       setAgreeInspectionFee(false);
       setPayRent(true);
       setPayCaution(true);
@@ -63,7 +63,15 @@ export const PropertyDetailsModal: React.FC = () => {
 
   if (!selectedProperty) return null;
 
-  // Calculate 3 similar property suggestions
+  // Find Listing Agent Profile
+  const listingAgent = allAgents.find(
+    (a) => a.id === selectedProperty.agentId || a.whatsapp === selectedProperty.agentPhone
+  ) || allAgents[0];
+
+  const agentPhone = listingAgent?.whatsapp || selectedProperty.agentPhone || "07073537007";
+  const agentCleanPhone = agentPhone.replace(/^0/, "");
+
+  // Calculate 3 similar property suggestions from ALL agents
   const similarProperties = properties
     .filter((p) => p.id !== selectedProperty.id)
     .sort((a, b) => {
@@ -75,15 +83,13 @@ export const PropertyDetailsModal: React.FC = () => {
     })
     .slice(0, 3);
 
-  // Fee Calculations (Only include optional fees if configured by Admin > 0)
+  // Fee Calculations
   const rentFeeAmount = selectedProperty.price;
   const cautionFeeAmount = selectedProperty.cautionFee && selectedProperty.cautionFee > 0 ? selectedProperty.cautionFee : 0;
   const reservationFeeAmount = selectedProperty.reservationFee && selectedProperty.reservationFee > 0 ? selectedProperty.reservationFee : 0;
   const agencyFeeAmount = selectedProperty.agencyFee && selectedProperty.agencyFee > 0 ? selectedProperty.agencyFee : 0;
   const inspectionFeeAmount = selectedProperty.inspectionFee && selectedProperty.inspectionFee > 0 ? selectedProperty.inspectionFee : 0;
   const legalFeeAmount = selectedProperty.legalFee && selectedProperty.legalFee > 0 ? selectedProperty.legalFee : 0;
-
-  const hasOptionalAdminFees = cautionFeeAmount > 0 || reservationFeeAmount > 0 || agencyFeeAmount > 0 || inspectionFeeAmount > 0 || legalFeeAmount > 0;
 
   const totalCalculatedPayment = 
     (payRent ? rentFeeAmount : 0) +
@@ -93,948 +99,485 @@ export const PropertyDetailsModal: React.FC = () => {
     (inspectionFeeAmount > 0 && payInspection ? inspectionFeeAmount : 0) +
     (legalFeeAmount > 0 && payLegal ? legalFeeAmount : 0);
 
-  const totalBasePackage = 
-    rentFeeAmount + cautionFeeAmount + reservationFeeAmount + agencyFeeAmount + inspectionFeeAmount + legalFeeAmount;
-
   const handleSelectSimilarProperty = (prop: Property) => {
     setSelectedProperty(prop);
-    setSelectedImageIdx(0);
-    setStep("details");
-    setActiveTab("overview");
-    if (modalContainerRef.current) {
-      modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
-    }
   };
 
-  const handleProceedToApplication = (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setErrorMessage("");
-    setStep("apply");
-  };
-
-  const handleFormNext = (e: React.FormEvent) => {
+  const handleNextToPayment = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !whatsapp.trim() || !propertyType.trim() || !preferredLocation.trim() || !occupation.trim()) {
-      setErrorMessage("Please complete all required fields in the application form.");
+    if (!fullName.trim() || !whatsapp.trim() || !moveInDate) {
+      setErrorMessage("Please fill in all mandatory contact fields.");
       return;
     }
-    if (!agreeInspectionFee) {
-      setErrorMessage("You must check the agreement box to accept paying the inspection fee.");
-      return;
-    }
-
     setErrorMessage("");
-
-    if (hasOptionalAdminFees) {
-      setStep("payment");
-    } else {
-      handleFinalPaymentSubmit(e);
-    }
+    setStep("payment");
   };
 
-  const handleFinalPaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!agreeInspectionFee) {
-      setErrorMessage("You must agree to pay the inspection fee to submit your application.");
-      return;
-    }
+  const prefilledWhatsappMsg = `Hello ${encodeURIComponent(listingAgent?.name || "Agent")}, I am inquiring about leasing ${encodeURIComponent(selectedProperty.title)} at ${encodeURIComponent(selectedProperty.location)}.%0A%0A👤 Applicant Details:%0A- Name: ${encodeURIComponent(fullName || "Valued Prospect")}%0A- Phone/WhatsApp: ${encodeURIComponent(whatsapp || "N/A")}%0A- Occupation: ${encodeURIComponent(occupation || "N/A")}%0A- Move-In Date: ${encodeURIComponent(moveInDate || "Immediate")}%0A%0A💰 Fee Breakdown:%0A- Annual Rent: ₦${rentFeeAmount.toLocaleString()}${legalFeeAmount > 0 ? `%0A- Legal Fee: ₦${legalFeeAmount.toLocaleString()}` : ""}${inspectionFeeAmount > 0 ? `%0A- Inspection Fee: ₦${inspectionFeeAmount.toLocaleString()}` : ""}${agencyFeeAmount > 0 ? `%0A- Agency Fee: ₦${agencyFeeAmount.toLocaleString()}` : ""}${cautionFeeAmount > 0 ? `%0A- Caution Deposit: ₦${cautionFeeAmount.toLocaleString()}` : ""}${reservationFeeAmount > 0 ? `%0A- Reservation Deposit: ₦${reservationFeeAmount.toLocaleString()}` : ""}%0A%0ATotal Package Amount: ₦${totalCalculatedPayment.toLocaleString()}`;
 
-    setSubmitting(true);
-    setErrorMessage("");
-
-    try {
-      // 1. Register booking in local app state & API
-      await addBooking({
-        propertyId: selectedProperty.id,
-        propertyName: selectedProperty.title,
-        propertyImage: selectedProperty.images[0] || "/images/ehis_hostel.png",
-        propertyLocation: selectedProperty.location,
-        checkIn: moveInDate,
-        checkOut: "Session End (12 Months)",
-        guestsCount: 1,
-        totalPrice: totalCalculatedPayment,
-        guestName: fullName,
-        guestPhone: whatsapp,
-      });
-
-      setStep("success");
-
-      // 2. Automatically forward complete application details to Admin WhatsApp (07073537007)
-      if (typeof window !== "undefined") {
-        window.open(directWhatsAppUrl, "_blank");
-      }
-    } catch (err: unknown) {
-      const error = err as Error;
-      console.error("Booking Application Error:", error);
-      setErrorMessage(error.message || "Failed to submit application. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  // Build comprehensive WhatsApp pre-filled message text targeting Admin (07073537007)
-  const feeLines = [
-    `• Base Rent: ${payRent ? `₦${rentFeeAmount.toLocaleString()}` : "Not Selected"}`,
-    cautionFeeAmount > 0 ? `• Caution Fee (Refundable): ${payCaution ? `₦${cautionFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
-    reservationFeeAmount > 0 ? `• Reservation Fee: ${payReservation ? `₦${reservationFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
-    agencyFeeAmount > 0 ? `• Agency Fee: ${payAgency ? `₦${agencyFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
-    inspectionFeeAmount > 0 ? `• Inspection Fee: ${payInspection ? `₦${inspectionFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
-    legalFeeAmount > 0 ? `• Legal Fee: ${payLegal ? `₦${legalFeeAmount.toLocaleString()}` : "Not Selected"}` : null,
-  ].filter(Boolean).join("\n");
-
-  const whatsappMsgText = encodeURIComponent(
-    `📋 *DOMOS PROPERTY GLOBAL LIMITED — TENANT PROPERTY APPLICATION*\n` +
-    `--------------------------------------------------\n` +
-    `🏠 *PROPERTY:* ${selectedProperty.title}\n` +
-    `📍 *LOCATION:* ${selectedProperty.location} (${selectedProperty.neighborhood})\n` +
-    `--------------------------------------------------\n` +
-    `👤 *APPLICANT DETAILS:*\n` +
-    `• Full Name: ${fullName}\n` +
-    `• WhatsApp Phone: ${whatsapp}\n` +
-    `• Occupation: ${occupation}\n` +
-    `• Desired Property Type: ${propertyType}\n` +
-    `• Preferred Location: ${preferredLocation}\n` +
-    `• Move-in Date: ${moveInDate}\n` +
-    `• Inspection Fee Agreement: ACCEPTED ✓ (Agreed to pay inspection fee)\n` +
-    `--------------------------------------------------\n` +
-    `💵 *PAYMENT SUMMARY:*\n` +
-    `${feeLines}\n` +
-    `💰 *TOTAL ESTIMATED AMOUNT:* ₦${totalCalculatedPayment.toLocaleString()}\n` +
-    `--------------------------------------------------\n` +
-    `Kindly review my application details & schedule inspection. Thank you!`
-  );
-
-  const directWhatsAppUrl = `https://wa.me/2347073537007?text=${whatsappMsgText}`;
+  const directWhatsappUrl = `https://wa.me/234${agentCleanPhone}?text=${prefilledWhatsappMsg}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/75 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
       <div 
-        className="fixed inset-0" 
-        onClick={() => setSelectedProperty(null)}
-      />
-
-      <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl overflow-hidden shadow-2xl border border-sky-200 dark:border-slate-800 z-10 max-h-[94vh] flex flex-col">
-        {/* Modal Top Header Bar */}
-        <div className="px-6 py-3 border-b border-sky-100 dark:border-slate-800 bg-sky-50/70 dark:bg-slate-900 flex justify-between items-center z-20">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-sky-500 animate-pulse"></span>
-            <span className="text-xs font-black uppercase tracking-wider text-sky-800 dark:text-sky-300">
-              DOMOS PROPERTY GLOBAL LIMITED • TENANT PORTAL
-            </span>
+        ref={modalContainerRef}
+        className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden flex flex-col max-h-[90vh]"
+      >
+        {/* Sticky Header */}
+        <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-20">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-extrabold tracking-widest uppercase text-amber-500 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
+                🏢 Apartment Listing
+              </span>
+              <span className="text-[10px] font-bold text-slate-400">
+                Ref ID: #{selectedProperty.id}
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 line-clamp-1">
+              {selectedProperty.title}
+            </h2>
+            <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+              <span>📍</span> {selectedProperty.location}
+            </p>
           </div>
-
+          
           <button
             onClick={() => setSelectedProperty(null)}
-            className="p-1.5 rounded-full bg-sky-100 dark:bg-slate-800 hover:bg-red-500 hover:text-white text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-            aria-label="Close modal"
+            className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 font-bold flex items-center justify-center transition-colors cursor-pointer"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
+            ✕
           </button>
         </div>
 
-        {/* Modal Scrollable Container */}
-        <div ref={modalContainerRef} className="overflow-y-auto flex-1">
+        {/* Modal Scrollable Body */}
+        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+
+          {/* STEP 1: PROPERTY DETAILS VIEW */}
           {step === "details" && (
-            <div className="grid grid-cols-1 md:grid-cols-12">
-              {/* Left Column: Room Gallery & Tabs */}
-              <div className="p-5 md:p-7 md:col-span-7 border-b md:border-b-0 md:border-r border-sky-100 dark:border-slate-800">
-                {/* Image Gallery Carousel (Horizontal Sliding with Sideways Arrows) */}
-                <div className="relative h-64 sm:h-72 w-full rounded-2xl overflow-hidden mb-3 shadow-md group bg-slate-950">
-                  <div 
-                    className="w-full h-full flex flex-row transition-transform duration-500 ease-in-out"
-                    style={{ transform: `translateX(-${selectedImageIdx * 100}%)` }}
-                  >
-                    {(selectedProperty.images && selectedProperty.images.length > 0 
-                      ? selectedProperty.images 
-                      : ["/images/ehis_hostel.png"]
-                    ).map((img, idx) => (
-                      <div key={idx} className="w-full h-full shrink-0 relative">
-                        <img
-                          src={img}
-                          alt={`${selectedProperty.title} photo ${idx + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-slate-950/20" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Gradient Overlay & Property Title */}
-                  <div className="absolute bottom-4 left-4 text-white z-10 pointer-events-none">
-                    <span className="text-[10px] uppercase font-extrabold tracking-widest gold-bg-gradient text-white px-2.5 py-1 rounded-full shadow-xs">
-                      📍 {selectedProperty.neighborhood}
-                    </span>
-                    <h3 className="text-base font-black mt-1 text-white drop-shadow-md">{selectedProperty.title}</h3>
-                  </div>
-
-                  {/* Slide Counter Badge */}
-                  <div className="absolute top-3 left-3 bg-slate-900/80 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full z-10 flex items-center gap-1 border border-white/20">
-                    <span>🖼️ Gallery</span>
-                    <span>
-                      ({selectedImageIdx + 1}/{selectedProperty.images?.length || 1})
-                    </span>
-                  </div>
-
-                  {/* Sideways Horizontal Navigation Arrows (Left & Right) */}
-                  {selectedProperty.images && selectedProperty.images.length > 1 && (
-                    <>
-                      {/* Left Arrow Button */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedImageIdx((prev) =>
-                            prev === 0 ? selectedProperty.images.length - 1 : prev - 1
-                          )
-                        }
-                        className="absolute left-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer z-20"
-                        aria-label="Previous photo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-                        </svg>
-                      </button>
-
-                      {/* Right Arrow Button */}
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setSelectedImageIdx((prev) =>
-                            (prev + 1) % selectedProperty.images.length
-                          )
-                        }
-                        className="absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-full bg-slate-900/80 hover:bg-sky-500 text-white backdrop-blur-md border border-white/20 transition-all shadow-md cursor-pointer z-20"
-                        aria-label="Next photo"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-4 h-4">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-                        </svg>
-                      </button>
-                    </>
-                  )}
+            <>
+              {/* 1. Original Gallery Showcase at top */}
+              <div className="space-y-3">
+                <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                  <img
+                    src={selectedProperty.images[selectedImageIdx] || selectedProperty.images[0]}
+                    alt={selectedProperty.title}
+                    className="w-full h-full object-cover transition-all duration-300"
+                  />
                 </div>
-
-                {/* Gallery Thumbnails */}
-                {selectedProperty.images && selectedProperty.images.length > 1 && (
-                  <div className="flex gap-2 overflow-x-auto pb-2 mb-4 scrollbar-thin">
+                {selectedProperty.images.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
                     {selectedProperty.images.map((img, idx) => (
                       <button
                         key={idx}
-                        type="button"
                         onClick={() => setSelectedImageIdx(idx)}
-                        className={`relative w-16 h-12 rounded-xl overflow-hidden border-2 shrink-0 transition-all cursor-pointer ${
-                          selectedImageIdx === idx 
-                            ? "border-sky-500 scale-95 shadow-md" 
-                            : "border-transparent opacity-70 hover:opacity-100"
+                        className={`relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
+                          selectedImageIdx === idx ? "border-amber-500 scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100"
                         }`}
                       >
-                        <img src={img} alt="" className="w-full h-full object-cover" />
+                        <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
                 )}
+              </div>
 
-                {/* Navigation Tabs */}
-                <div className="flex gap-4 border-b border-sky-100 dark:border-slate-800 mb-4">
+              {/* 2. Pricing Banner (Annual Rent + Fee Summary) */}
+              <div className="p-4 sm:p-5 rounded-2xl bg-slate-950 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <span className="text-[10px] font-extrabold uppercase text-amber-400 block">
+                    Annual Rent Price
+                  </span>
+                  <div className="flex items-baseline gap-2 mt-0.5">
+                    <span className="text-2xl sm:text-3xl font-black text-amber-500">
+                      ₦{selectedProperty.price.toLocaleString()}
+                    </span>
+                    <span className="text-xs font-semibold text-slate-400">/ session (year)</span>
+                  </div>
+                  <span className="text-[11px] text-slate-400 block mt-1 font-medium">
+                    Total Package with Fees: <strong className="text-amber-400">₦{totalCalculatedPayment.toLocaleString()}</strong>
+                  </span>
+                </div>
+                <button
+                  onClick={() => {
+                    setStep("apply");
+                    if (modalContainerRef.current) modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                  className="px-5 py-3 rounded-xl gold-bg-gradient font-black text-xs text-white shadow-lg hover:scale-105 transition-transform cursor-pointer"
+                >
+                  Make Inquiry →
+                </button>
+              </div>
+
+              {/* Fee Breakdown Overview Box */}
+              <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/50 border border-amber-200/80 dark:border-slate-700 space-y-2">
+                <h4 className="text-xs font-black uppercase tracking-wider text-amber-800 dark:text-amber-300">
+                  📊 Fee & Payment Structure Breakdown
+                </h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs pt-1">
+                  <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                    <span className="text-[10px] text-slate-400 block">Annual Rent</span>
+                    <span className="font-extrabold text-amber-600 dark:text-amber-400">₦{rentFeeAmount.toLocaleString()}</span>
+                  </div>
+                  {legalFeeAmount > 0 && (
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">📜 Legal Fee</span>
+                      <span className="font-extrabold text-purple-600 dark:text-purple-400">₦{legalFeeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {inspectionFeeAmount > 0 && (
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">🔎 Inspection Fee</span>
+                      <span className="font-extrabold text-emerald-600 dark:text-emerald-400">₦{inspectionFeeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {agencyFeeAmount > 0 && (
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">🤝 Agency Fee</span>
+                      <span className="font-extrabold text-amber-600 dark:text-amber-400">₦{agencyFeeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {cautionFeeAmount > 0 && (
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">🛡️ Caution Fee</span>
+                      <span className="font-extrabold text-sky-600 dark:text-sky-400">₦{cautionFeeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                  {reservationFeeAmount > 0 && (
+                    <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                      <span className="text-[10px] text-slate-400 block">📌 Reservation Deposit</span>
+                      <span className="font-extrabold text-rose-600 dark:text-rose-400">₦{reservationFeeAmount.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-between items-center pt-2 border-t border-amber-200/60 dark:border-slate-700 text-xs font-black">
+                  <span>Total Initial Package:</span>
+                  <span className="text-sm font-black text-amber-600 dark:text-amber-400">₦{totalCalculatedPayment.toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* 3. Details Tabs */}
+              <div className="space-y-4">
+                <div className="flex border-b border-slate-200 dark:border-slate-800">
                   <button
-                    type="button"
                     onClick={() => setActiveTab("overview")}
-                    className={`pb-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 cursor-pointer ${
-                      activeTab === "overview"
-                        ? "border-sky-500 text-sky-600 dark:text-sky-400"
-                        : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+                    className={`pb-3 px-4 text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === "overview" ? "border-b-2 border-amber-500 text-amber-600 dark:text-amber-400" : "text-slate-500 hover:text-slate-900"
                     }`}
                   >
-                    Overview & Location
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab("reviews")}
-                    className={`pb-2 text-xs font-black uppercase tracking-wider transition-colors border-b-2 flex items-center gap-1.5 cursor-pointer ${
-                      activeTab === "reviews"
-                        ? "border-sky-500 text-sky-600 dark:text-sky-400"
-                        : "border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                    }`}
-                  >
-                    Reviews ({selectedProperty.reviews?.length || 0})
+                    Property Description & Amenities
                   </button>
                 </div>
 
                 {activeTab === "overview" && (
-                  <div>
-                    <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300 mb-5">
-                      {selectedProperty.description}
-                    </p>
-                    
-                    {/* Google Maps Location Button */}
-                    <div className="mb-5 p-3 rounded-2xl bg-sky-50 dark:bg-slate-800/60 border border-sky-200 dark:border-slate-700 flex justify-between items-center">
-                      <div>
-                        <span className="text-[10px] uppercase font-bold text-sky-700 dark:text-sky-300 block">Google Maps Location</span>
-                        <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{selectedProperty.location}</span>
-                      </div>
-                      <a
-                        href={selectedProperty.googleMapsUrl || "https://maps.google.com/?q=Ekpoma+Edo+State"}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 rounded-xl bg-sky-600 text-white font-bold text-xs hover:bg-sky-700 transition-colors shadow-xs flex items-center gap-1"
-                      >
-                        <span>🗺️ View Map</span>
-                      </a>
-                    </div>
-
-                    <div>
-                      <h4 className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">
-                        Hostel Facilities & Amenities:
-                      </h4>
-                      <div className="grid grid-cols-2 gap-2">
-                        {selectedProperty.amenities.map((amenity, idx) => (
-                          <div key={idx} className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300 font-medium">
-                            <span className="text-sky-500 font-bold">✦</span>
-                            <span>{amenity}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "reviews" && (
-                  <div className="space-y-3">
-                    {selectedProperty.reviews?.length === 0 ? (
-                      <p className="text-xs text-slate-500 italic py-4 text-center">No reviews listed yet.</p>
-                    ) : (
-                      selectedProperty.reviews?.map((review) => (
-                        <div key={review.id} className="p-3.5 rounded-2xl border border-sky-100 dark:border-slate-800 bg-sky-50/30 dark:bg-slate-900/30">
-                          <div className="flex justify-between items-start mb-1">
-                            <div className="flex items-center gap-2">
-                              <div className="w-7 h-7 rounded-full gold-bg-gradient text-white flex items-center justify-center font-bold text-xs">
-                                {review.avatar}
-                              </div>
-                              <div>
-                                <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">{review.guestName}</h4>
-                                <span className="text-[9px] text-slate-400">{review.date}</span>
-                              </div>
-                            </div>
-                            <span className="text-xs font-black text-amber-400">★ {review.rating.toFixed(1)}</span>
-                          </div>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 italic">
-                            &ldquo;{review.comment}&rdquo;
-                          </p>
+                  <div className="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                    <p>{selectedProperty.description}</p>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                      {selectedProperty.amenities?.map((am, i) => (
+                        <div key={i} className="p-2.5 rounded-xl bg-slate-100/70 dark:bg-slate-800/50 font-semibold text-slate-800 dark:text-slate-200">
+                          ✓ {am}
                         </div>
-                      ))
-                    )}
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
 
-              {/* Right Column: Pricing & Booking Application Action */}
-              <div className="p-5 md:p-7 md:col-span-5 flex flex-col justify-between bg-sky-50/40 dark:bg-slate-900/30">
-                <div>
-                  <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-sky-200 dark:border-slate-800 shadow-xs mb-5 space-y-2.5">
-                    <span className="text-[10px] uppercase font-bold text-sky-600 dark:text-sky-400 block tracking-wider">
-                      Fee Structure Breakdown
-                    </span>
-
-                    <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                      <span className="text-slate-600 dark:text-slate-400">Annual / Session Rent:</span>
-                      <span className="font-black text-slate-900 dark:text-slate-100">
-                        ₦{rentFeeAmount.toLocaleString()}
-                      </span>
-                    </div>
-
-                    {cautionFeeAmount > 0 && (
-                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400">Caution Deposit (Refundable):</span>
-                        <span className="font-black text-slate-900 dark:text-slate-100">
-                          ₦{cautionFeeAmount.toLocaleString()}
+              {/* 4. VERIFIED LISTING AGENT BADGE */}
+              {listingAgent && (
+                <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={listingAgent.profileImage || "/images/ehis_hostel.png"}
+                      alt={listingAgent.name}
+                      className="w-12 h-12 rounded-xl object-cover border-2 border-amber-500 shadow-sm"
+                    />
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                          ✓ Verified Listing Agent
+                        </span>
+                        <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                          {listingAgent.cacNumber}
                         </span>
                       </div>
-                    )}
-
-                    {reservationFeeAmount > 0 && (
-                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400">Reservation / Hold Deposit:</span>
-                        <span className="font-black text-slate-900 dark:text-slate-100">
-                          ₦{reservationFeeAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {agencyFeeAmount > 0 && (
-                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400">Agency Fee:</span>
-                        <span className="font-black text-slate-900 dark:text-slate-100">
-                          ₦{agencyFeeAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {inspectionFeeAmount > 0 && (
-                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400">Inspection Fee:</span>
-                        <span className="font-black text-slate-900 dark:text-slate-100">
-                          ₦{inspectionFeeAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    {legalFeeAmount > 0 && (
-                      <div className="flex justify-between items-center text-xs pb-2 border-b border-slate-100 dark:border-slate-800">
-                        <span className="text-slate-600 dark:text-slate-400">Legal Fee:</span>
-                        <span className="font-black text-slate-900 dark:text-slate-100">
-                          ₦{legalFeeAmount.toLocaleString()}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex justify-between items-center text-sm pt-1 font-black text-sky-600 dark:text-sky-400">
-                      <span>Total Package:</span>
-                      <span>₦{totalBasePackage.toLocaleString()}</span>
+                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
+                        {listingAgent.name}
+                      </h4>
+                      <p className="text-[11px] text-slate-500">📍 {listingAgent.officeAddress}</p>
                     </div>
                   </div>
 
-                  {errorMessage && (
-                    <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold mb-4">
-                      {errorMessage}
-                    </div>
-                  )}
-
-                  <button
-                    type="button"
-                    onClick={handleProceedToApplication}
-                    className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                  <a
+                    href={`tel:${agentPhone}`}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex flex-col items-center justify-center shadow-md transition-all cursor-pointer text-center"
                   >
-                    <span>📝 Start Tenant Application</span>
-                    <span>→</span>
-                  </button>
+                    <div className="flex items-center gap-1 text-xs font-black">
+                      <span>📞</span> Call Agent
+                    </div>
+                    <span className="text-[11px] font-bold opacity-90">{agentPhone}</span>
+                  </a>
+                </div>
+              )}
+
+              {/* 5. SIMILAR APARTMENTS SECTION */}
+              {similarProperties.length > 0 && (
+                <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                    <span>🏢</span> Similar Apartments & Lodges You Might Like
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {similarProperties.map((simProp) => {
+                      const simAgent = allAgents.find((a) => a.id === simProp.agentId) || allAgents[0];
+                      return (
+                        <div
+                          key={simProp.id}
+                          onClick={() => handleSelectSimilarProperty(simProp)}
+                          className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
+                        >
+                          <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+                            <img
+                              src={simProp.images[0] || "/images/ehis_hostel.png"}
+                              alt={simProp.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                            />
+                          </div>
+                          <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
+                            {simProp.title}
+                          </h4>
+                          <p className="text-[11px] font-black text-amber-500">
+                            ₦{simProp.price.toLocaleString()} / year
+                          </p>
+                          <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200 dark:border-slate-700/50">
+                            <img src={simAgent.profileImage || "/images/ehis_hostel.png"} alt={simAgent.name} className="w-4 h-4 rounded-full object-cover" />
+                            <span className="text-[10px] text-slate-400 line-clamp-1">{simAgent.name}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* STEP 2: DEDICATED INQUIRY APPLICATION FORM PAGE */}
+          {step === "apply" && (
+            <div className="space-y-5 animate-in slide-in-from-right-4 duration-200">
+              {/* Back Button Header */}
+              <button
+                onClick={() => setStep("details")}
+                className="text-xs font-extrabold text-amber-600 dark:text-amber-400 hover:underline flex items-center gap-1 cursor-pointer"
+              >
+                ← Back to Property Details
+              </button>
+
+              {/* Property Summary Bar */}
+              <div className="p-4 rounded-2xl bg-slate-950 text-white flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-black text-amber-400 uppercase tracking-wide">Inquiring For:</h4>
+                  <p className="text-sm font-black line-clamp-1 mt-0.5">{selectedProperty.title}</p>
+                  <p className="text-[11px] text-slate-400">📍 {selectedProperty.location}</p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-slate-400 block">Total Package</span>
+                  <span className="text-base font-black text-amber-500">₦{totalCalculatedPayment.toLocaleString()}</span>
                 </div>
               </div>
 
-              {/* Similar Apartments / Hostels Recommendations */}
-              {similarProperties.length > 0 && (
-                <div className="col-span-1 md:col-span-12 p-5 sm:p-7 border-t border-sky-100 dark:border-slate-800 bg-sky-50/50 dark:bg-slate-900/50">
-                  <div className="flex justify-between items-center mb-4">
+              {/* Form Component */}
+              <form onSubmit={(e) => {
+                e.preventDefault();
+                addBooking({
+                  propertyId: selectedProperty.id,
+                  propertyName: selectedProperty.title,
+                  propertyImage: selectedProperty.images[0] || "",
+                  propertyLocation: selectedProperty.location,
+                  checkIn: moveInDate || new Date().toISOString().split("T")[0],
+                  checkOut: moveInDate || new Date().toISOString().split("T")[0],
+                  guestsCount: 1,
+                  totalPrice: totalCalculatedPayment,
+                  guestName: fullName || "Valued Prospect",
+                  guestPhone: whatsapp || "N/A",
+                  agentId: selectedProperty.agentId,
+                });
+                window.open(directWhatsappUrl, "_blank");
+              }} className="p-6 rounded-3xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-4">
+                <h3 className="text-sm font-black text-slate-900 dark:text-white border-b border-slate-200 dark:border-slate-700 pb-2">
+                  Tenant Inquiry Application Form
+                </h3>
+
+                {errorMessage && (
+                  <p className="text-xs text-rose-500 font-bold bg-rose-100 p-2.5 rounded-xl">{errorMessage}</p>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1 text-slate-700 dark:text-slate-300">Full Name *</label>
+                    <input
+                      type="text"
+                      required
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      placeholder="Enter your full name"
+                      className="w-full p-3 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1 text-slate-700 dark:text-slate-300">WhatsApp Phone *</label>
+                    <input
+                      type="tel"
+                      required
+                      value={whatsapp}
+                      onChange={(e) => setWhatsapp(e.target.value)}
+                      placeholder="08012345678"
+                      className="w-full p-3 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1 text-slate-700 dark:text-slate-300">Occupation / Status</label>
+                    <input
+                      type="text"
+                      value={occupation}
+                      onChange={(e) => setOccupation(e.target.value)}
+                      placeholder="e.g. Student, Businessman, Engineer..."
+                      className="w-full p-3 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-medium"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="text-[11px] font-bold block mb-1 text-slate-700 dark:text-slate-300">Preferred Move-In Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={moveInDate}
+                      onChange={(e) => setMoveInDate(e.target.value)}
+                      className="w-full p-3 text-xs rounded-xl bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 font-medium"
+                    />
+                  </div>
+                </div>
+
+                {/* Fee Breakdown Summary */}
+                <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+                  <span className="font-extrabold text-amber-600 dark:text-amber-400 block text-[11px]">Fee Breakdown Summary:</span>
+                  <div className="flex justify-between">
+                    <span>Annual Rent:</span>
+                    <span className="font-bold">₦{rentFeeAmount.toLocaleString()}</span>
+                  </div>
+                  {totalCalculatedPayment > rentFeeAmount && (
+                    <div className="flex justify-between text-slate-500">
+                      <span>Additional Admin Fees:</span>
+                      <span className="font-bold">₦{(totalCalculatedPayment - rentFeeAmount).toLocaleString()}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-1 border-t border-slate-200 dark:border-slate-800 font-black text-amber-500">
+                    <span>Total Initial Package:</span>
+                    <span>₦{totalCalculatedPayment.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="pt-2">
+                  <a
+                    href={directWhatsappUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={() => {
+                      addBooking({
+                        propertyId: selectedProperty.id,
+                        propertyName: selectedProperty.title,
+                        propertyImage: selectedProperty.images[0] || "",
+                        propertyLocation: selectedProperty.location,
+                        checkIn: moveInDate || new Date().toISOString().split("T")[0],
+                        checkOut: moveInDate || new Date().toISOString().split("T")[0],
+                        guestsCount: 1,
+                        totalPrice: totalCalculatedPayment,
+                        guestName: fullName || "Valued Prospect",
+                        guestPhone: whatsapp || "N/A",
+                        agentId: selectedProperty.agentId,
+                      });
+                    }}
+                    className="w-full py-4 rounded-xl gold-bg-gradient hover:opacity-95 text-white font-extrabold text-xs text-center flex items-center justify-center gap-2 shadow-lg transition-all cursor-pointer"
+                  >
+                    <span>Proceed with Inquiry →</span>
+                  </a>
+                </div>
+              </form>
+
+              {/* Listing Agent Contact Card */}
+              {listingAgent && (
+                <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={listingAgent.profileImage || "/images/ehis_hostel.png"}
+                      alt={listingAgent.name}
+                      className="w-10 h-10 rounded-xl object-cover border-2 border-amber-500 shadow-sm"
+                    />
                     <div>
-                      <span className="text-[10px] font-black uppercase tracking-widest text-sky-600 dark:text-sky-400 block">
-                        💡 SIMILAR ACCOMMODATIONS IN EKPOMA
+                      <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                        ✓ Verified Listing Agent
                       </span>
-                      <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-slate-100">
-                        Suggested Apartments Near {selectedProperty.neighborhood}
-                      </h3>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white mt-0.5">
+                        {listingAgent.name}
+                      </h4>
                     </div>
                   </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    {similarProperties.map((similarProp) => (
-                      <div
-                        key={similarProp.id}
-                        onClick={() => handleSelectSimilarProperty(similarProp)}
-                        className="glass-card rounded-2xl overflow-hidden p-3 border border-sky-200/60 dark:border-slate-800 cursor-pointer hover:scale-[1.02] transition-all group flex flex-col justify-between"
-                      >
-                        <div>
-                          <div className="relative h-28 w-full rounded-xl overflow-hidden mb-2.5 bg-slate-900">
-                            <img
-                              src={similarProp.images[0] || "/images/ehis_hostel.png"}
-                              alt={similarProp.title}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            />
-                            <span className="absolute top-2 left-2 bg-slate-900/80 backdrop-blur-xs text-[9px] font-extrabold text-white px-2 py-0.5 rounded-full">
-                              📍 {similarProp.neighborhood}
-                            </span>
-                          </div>
-
-                          <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100 line-clamp-1 group-hover:text-sky-500 transition-colors">
-                            {similarProp.title}
-                          </h4>
-                          <p className="text-[10px] text-slate-500 line-clamp-1 mt-0.5 font-medium">
-                            {similarProp.location}
-                          </p>
-                        </div>
-
-                        <div className="mt-3 pt-2 border-t border-sky-100 dark:border-slate-800 flex justify-between items-center">
-                          <div>
-                            <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                              ₦{similarProp.price.toLocaleString()}
-                            </span>
-                            <span className="text-[9px] text-slate-400">/ session</span>
-                          </div>
-                          <button
-                            type="button"
-                            className="px-2.5 py-1 rounded-lg gold-bg-gradient text-white text-[10px] font-bold shadow-xs hover:opacity-90 cursor-pointer"
-                          >
-                            View →
-                          </button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                  <a
+                    href={`tel:${agentPhone}`}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex flex-col items-center justify-center shadow-md transition-all cursor-pointer text-center"
+                  >
+                    <div className="flex items-center gap-1 text-xs font-black">
+                      <span>📞</span> Call Agent
+                    </div>
+                    <span className="text-[11px] font-bold opacity-90">{agentPhone}</span>
+                  </a>
                 </div>
               )}
             </div>
           )}
 
-          {step === "apply" && (
-            <div className="p-6 sm:p-8 max-w-2xl mx-auto">
-              <div className="mb-6 flex justify-between items-center border-b border-sky-100 dark:border-slate-800 pb-4">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">
-                    Tenant Application Form
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Applying for <span className="font-bold text-sky-600">{selectedProperty.title}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep("details")}
-                  className="text-xs font-bold text-sky-600 hover:underline cursor-pointer"
-                >
-                  ← Back to Details
-                </button>
-              </div>
-
-              <form onSubmit={handleFormNext} className="space-y-4">
-                {errorMessage && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold">
-                    {errorMessage}
-                  </div>
-                )}
-
-                {/* Full Name & WhatsApp Number */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Full Name *
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Osasere Emmanuel"
-                      value={fullName}
-                      onChange={(e) => setFullName(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      WhatsApp Number *
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="e.g. 08012345678"
-                      value={whatsapp}
-                      onChange={(e) => setWhatsapp(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Property Type Options & Preferred Location */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      What type of property are you looking for? *
-                    </label>
-                    <select
-                      value={propertyType}
-                      onChange={(e) => setPropertyType(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
-                      required
+          {/* 5. SIMILAR APARTMENTS SECTION (Across all agents) */}
+          {similarProperties.length > 0 && (
+            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                <span>🏢</span> Similar Apartments & Lodges You Might Like
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {similarProperties.map((simProp) => {
+                  const simAgent = allAgents.find((a) => a.id === simProp.agentId) || allAgents[0];
+                  return (
+                    <div
+                      key={simProp.id}
+                      onClick={() => handleSelectSimilarProperty(simProp)}
+                      className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
                     >
-                      <option value="Self-Contained Single Room Lodge">Self-Contained Single Room Lodge</option>
-                      <option value="Self-Contained Double Room Lodge">Self-Contained Double Room Lodge</option>
-                      <option value="1-Bedroom Executive Apartment / Shortlet">1-Bedroom Executive Apartment / Shortlet</option>
-                      <option value="2-Bedroom Shared / Family Flat">2-Bedroom Shared / Family Flat</option>
-                      <option value="Executive Studio Suite">Executive Studio Suite</option>
-                      <option value="Short-Stay Hotel Lodge">Short-Stay Hotel Lodge</option>
-                      <option value="Other Custom Accommodation">Other Custom Accommodation</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Preferred Location *
-                    </label>
-                    <select
-                      value={preferredLocation}
-                      onChange={(e) => setPreferredLocation(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
-                      required
-                    >
-                      <option value="AAU Main Gate Area">AAU Main Gate Area</option>
-                      <option value="Ihniduma Campus Zone">Ihniduma Campus Zone</option>
-                      <option value="Benin-Auchi Expressway">Benin-Auchi Expressway</option>
-                      <option value="University Road">University Road</option>
-                      <option value="Royal Market Area">Royal Market Area</option>
-                      <option value="Emaudo Quarters">Emaudo Quarters</option>
-                      <option value="Anywhere in Ekpoma">Anywhere in Ekpoma</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Occupation & Move-in Date */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Occupation *
-                    </label>
-                    <select
-                      value={occupation}
-                      onChange={(e) => setOccupation(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
-                      required
-                    >
-                      <option value="Undergraduate Student">Undergraduate Student (AAU)</option>
-                      <option value="Post-Graduate / Research Student">Post-Graduate / Research Student</option>
-                      <option value="Young Professional / Corporate Worker">Young Professional / Corporate Worker</option>
-                      <option value="Remote Worker / Freelancer">Remote Worker / Freelancer</option>
-                      <option value="Intern / NYSC Corper">Intern / NYSC Corper</option>
-                      <option value="Business Traveler / Short Visitor">Business Traveler / Short Visitor</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
-                      Intended Move-in Date *
-                    </label>
-                    <input
-                      type="date"
-                      value={moveInDate}
-                      onChange={(e) => setMoveInDate(e.target.value)}
-                      className="w-full px-3.5 py-2.5 text-xs rounded-xl border border-sky-200 dark:border-slate-800 bg-white dark:bg-slate-900 focus:ring-2 focus:ring-sky-500 font-medium"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Inspection Fee Agreement Checkbox */}
-                <div className="p-4 bg-sky-50 dark:bg-slate-800/60 border border-sky-200 dark:border-slate-700 rounded-2xl">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={agreeInspectionFee}
-                      onChange={(e) => setAgreeInspectionFee(e.target.checked)}
-                      className="mt-0.5 w-4 h-4 accent-sky-500 rounded-sm shrink-0"
-                      required
-                    />
-                    <div className="text-xs">
-                      <span className="font-extrabold text-slate-900 dark:text-slate-100 block">
-                        Inspection Fee Agreement *
-                      </span>
-                      <span className="text-slate-600 dark:text-slate-300 font-medium">
-                        I click to agree to pay the property inspection fee for a physical on-site tour or live guided video walkthrough.
-                      </span>
-                    </div>
-                  </label>
-                </div>
-
-                <button
-                  type="submit"
-                  className="w-full py-4 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-lg hover:opacity-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                >
-                  <span>{hasOptionalAdminFees ? "Proceed to Payment Breakdown" : "🚀 Submit Application to Admin WhatsApp"}</span>
-                  <span>→</span>
-                </button>
-              </form>
-            </div>
-          )}
-
-          {step === "payment" && (
-            <div className="p-6 sm:p-8 max-w-xl mx-auto">
-              <div className="mb-6 flex justify-between items-center border-b border-sky-100 dark:border-slate-800 pb-4">
-                <div>
-                  <h2 className="text-xl font-black text-slate-900 dark:text-slate-100">
-                    Payment & Deposit Selector
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Select payment components for <span className="font-bold text-sky-600">{selectedProperty.title}</span>
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setStep("apply")}
-                  className="text-xs font-bold text-sky-600 hover:underline cursor-pointer"
-                >
-                  ← Edit Application
-                </button>
-              </div>
-
-              <form onSubmit={handleFinalPaymentSubmit} className="space-y-4">
-                {errorMessage && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs font-bold">
-                    {errorMessage}
-                  </div>
-                )}
-
-                <div className="space-y-3">
-                  {/* Rent checkbox */}
-                  <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                    payRent
-                      ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                      : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                  }`}>
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={payRent}
-                        onChange={(e) => setPayRent(e.target.checked)}
-                        className="w-4 h-4 accent-sky-500 rounded-sm"
-                      />
-                      <div>
-                        <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                          Annual / Session Rent
-                        </span>
-                        <span className="text-[10px] text-slate-500">Base Accommodation Rent</span>
+                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+                        <img
+                          src={simProp.images[0] || "/images/ehis_hostel.png"}
+                          alt={simProp.title}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                        />
+                      </div>
+                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
+                        {simProp.title}
+                      </h4>
+                      <p className="text-[11px] font-black text-amber-500">
+                        ₦{simProp.price.toLocaleString()} / year
+                      </p>
+                      <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200 dark:border-slate-700/50">
+                        <img src={simAgent.profileImage || "/images/ehis_hostel.png"} alt={simAgent.name} className="w-4 h-4 rounded-full object-cover" />
+                        <span className="text-[10px] text-slate-400 line-clamp-1">{simAgent.name}</span>
                       </div>
                     </div>
-                    <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                      ₦{rentFeeAmount.toLocaleString()}
-                    </span>
-                  </label>
-
-                  {/* Caution Fee checkbox (Only if filled by Admin > 0) */}
-                  {cautionFeeAmount > 0 && (
-                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                      payCaution
-                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={payCaution}
-                          onChange={(e) => setPayCaution(e.target.checked)}
-                          className="w-4 h-4 accent-sky-500 rounded-sm"
-                        />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                            Refundable Caution Fee
-                          </span>
-                          <span className="text-[10px] text-slate-500">Refundable at end of tenancy</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                        ₦{cautionFeeAmount.toLocaleString()}
-                      </span>
-                    </label>
-                  )}
-
-                  {/* Reservation Deposit checkbox (Only if filled by Admin > 0) */}
-                  {reservationFeeAmount > 0 && (
-                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                      payReservation
-                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={payReservation}
-                          onChange={(e) => setPayReservation(e.target.checked)}
-                          className="w-4 h-4 accent-sky-500 rounded-sm"
-                        />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                            Room Reservation / Hold Fee
-                          </span>
-                          <span className="text-[10px] text-slate-500">Locks property immediately</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                        ₦{reservationFeeAmount.toLocaleString()}
-                      </span>
-                    </label>
-                  )}
-
-                  {/* Agency Fee checkbox (Only if filled by Admin > 0) */}
-                  {agencyFeeAmount > 0 && (
-                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                      payAgency
-                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={payAgency}
-                          onChange={(e) => setPayAgency(e.target.checked)}
-                          className="w-4 h-4 accent-sky-500 rounded-sm"
-                        />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                            Agency Fee
-                          </span>
-                          <span className="text-[10px] text-slate-500">Processing & documentation</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                        ₦{agencyFeeAmount.toLocaleString()}
-                      </span>
-                    </label>
-                  )}
-
-                  {/* Inspection Fee checkbox (Only if filled by Admin > 0) */}
-                  {inspectionFeeAmount > 0 && (
-                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                      payInspection
-                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={payInspection}
-                          onChange={(e) => setPayInspection(e.target.checked)}
-                          className="w-4 h-4 accent-sky-500 rounded-sm"
-                        />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                            Inspection Fee
-                          </span>
-                          <span className="text-[10px] text-slate-500">On-site property tour</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                        ₦{inspectionFeeAmount.toLocaleString()}
-                      </span>
-                    </label>
-                  )}
-
-                  {/* Legal Fee checkbox (Only if filled by Admin > 0) */}
-                  {legalFeeAmount > 0 && (
-                    <label className={`flex items-center justify-between p-4 rounded-2xl border cursor-pointer transition-all ${
-                      payLegal
-                        ? "border-sky-500 bg-sky-50/70 dark:bg-slate-800/80 ring-1 ring-sky-500"
-                        : "border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900"
-                    }`}>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="checkbox"
-                          checked={payLegal}
-                          onChange={(e) => setPayLegal(e.target.checked)}
-                          className="w-4 h-4 accent-sky-500 rounded-sm"
-                        />
-                        <div>
-                          <span className="text-xs font-black text-slate-900 dark:text-slate-100 block">
-                            Legal / Tenancy Agreement Fee
-                          </span>
-                          <span className="text-[10px] text-slate-500">Legal contract & verification</span>
-                        </div>
-                      </div>
-                      <span className="text-sm font-black text-sky-600 dark:text-sky-400">
-                        ₦{legalFeeAmount.toLocaleString()}
-                      </span>
-                    </label>
-                  )}
-                </div>
-
-                {/* Total Payment Banner */}
-                <div className="p-4 rounded-2xl bg-slate-900 text-white flex justify-between items-center shadow-md">
-                  <div>
-                    <span className="text-[10px] text-sky-400 font-extrabold uppercase tracking-wider block">Total Payment Due:</span>
-                    <span className="text-2xl font-black text-white">₦{totalCalculatedPayment.toLocaleString()}</span>
-                  </div>
-                  <span className="text-[10px] bg-sky-500 text-white font-bold px-2.5 py-1 rounded-full">
-                    Instant Receipt
-                  </span>
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full py-4 rounded-2xl gold-bg-gradient text-white font-black text-xs shadow-xl transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? (
-                    <span>Sending Application to WhatsApp...</span>
-                  ) : (
-                    <span>🚀 Forward Application to Admin WhatsApp</span>
-                  )}
-                </button>
-              </form>
-            </div>
-          )}
-
-          {step === "success" && (
-            <div className="p-8 text-center max-w-lg mx-auto flex flex-col items-center animate-in zoom-in duration-300">
-              <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-950/50 border border-emerald-500/30 flex items-center justify-center text-emerald-500 mb-4 shadow-md">
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor" className="w-8 h-8">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                </svg>
-              </div>
-
-              <h2 className="text-2xl font-black tracking-tight text-slate-900 dark:text-slate-100 mb-1">
-                Application Form Ready!
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 leading-relaxed">
-                Thank you, <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>! Your application details for <span className="font-bold text-sky-600">{selectedProperty.title}</span> have been compiled.
-              </p>
-
-              {/* Application Summary Card */}
-              <div className="w-full text-left bg-sky-50/60 dark:bg-slate-900/80 border border-sky-200 dark:border-slate-800 rounded-2xl p-5 space-y-2.5 text-xs mb-6 shadow-sm">
-                <div className="flex justify-between items-center border-b border-sky-100 dark:border-slate-800 pb-2">
-                  <span className="font-black text-sky-800 dark:text-sky-300 uppercase tracking-wider text-[10px]">Property:</span>
-                  <span className="font-extrabold text-slate-900 dark:text-slate-100">{selectedProperty.title}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Applicant Name:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{fullName}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">WhatsApp Phone:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{whatsapp}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Desired Property Type:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{propertyType}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Preferred Location:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{preferredLocation}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Occupation:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{occupation}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Inspection Fee Agreement:</span>
-                  <span className="font-bold text-emerald-600">ACCEPTED ✓</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-500">Move-in Date:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">{moveInDate}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-sky-100 dark:border-slate-800">
-                  <span className="font-black text-slate-900 dark:text-slate-100">Estimated Total Amount:</span>
-                  <span className="text-base font-black text-sky-600 dark:text-sky-400">₦{totalCalculatedPayment.toLocaleString()}</span>
-                </div>
-              </div>
-
-              {/* Action Buttons */}
-              <div className="w-full space-y-3">
-                <a
-                  href={directWhatsAppUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full py-4 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white font-black text-xs shadow-lg transition-all flex items-center justify-center gap-2 cursor-pointer border border-emerald-400/50"
-                >
-                  <span className="text-base">🚀</span>
-                  <span>Forward Application to Admin WhatsApp (07073537007)</span>
-                </a>
-
-                <button
-                  type="button"
-                  onClick={() => setSelectedProperty(null)}
-                  className="w-full py-3 rounded-2xl border border-sky-200 dark:border-slate-800 hover:bg-sky-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 font-bold text-xs transition-colors cursor-pointer"
-                >
-                  Close & Explore More Properties
-                </button>
+                  );
+                })}
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

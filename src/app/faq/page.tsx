@@ -27,26 +27,18 @@ export default function FAQPage() {
         <FAQ />
       </main>
 
-      {/* Floating Sticky WhatsApp Button */}
-      <a
-        href="https://wa.me/2347073537007?text=Hello%20DOMOS%20PROPERTY%20GLOBAL%20LIMITED,%20I%20have%20a%20question."
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-6 right-6 z-40 bg-emerald-500 hover:bg-emerald-600 text-white p-3.5 sm:px-5 sm:py-3.5 rounded-full shadow-2xl transition-all duration-300 transform hover:scale-110 flex items-center gap-2.5 font-black text-xs border-2 border-white dark:border-slate-900 group"
-        aria-label="Chat on WhatsApp"
-      >
-        <span className="text-xl">💬</span>
-        <span className="hidden sm:inline">WhatsApp: 07073537007</span>
-        <span className="w-2.5 h-2.5 rounded-full bg-white animate-ping"></span>
-      </a>
+
 
       <PropertyDetailsModal />
 
       {/* Footer */}
       <footer className="border-t border-sky-200/60 dark:border-slate-800 bg-sky-950 text-white py-10 px-4 mt-auto">
-        <div className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-[10px] text-sky-300/60 gap-4">
+        <div className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-sky-300/80 gap-4">
+          <a href="mailto:domospropertygloballimited@gmail.com" className="hover:text-amber-300 transition-colors font-bold flex items-center gap-1">
+            ✉️ domospropertygloballimited@gmail.com
+          </a>
           <p>© {new Date().getFullYear()} DOMOS PROPERTY GLOBAL LIMITED. All rights reserved.</p>
-          <div className="flex gap-4">
+          <div className="flex gap-4 text-[10px] text-sky-300/60">
             <span className="hover:underline cursor-pointer">Terms & Conditions</span>
             <span className="hover:underline cursor-pointer">Privacy Policy</span>
           </div>

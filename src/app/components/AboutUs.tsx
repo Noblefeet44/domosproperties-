@@ -286,17 +286,16 @@ export const AboutUs: React.FC = () => {
             <div className="text-xs space-y-2 text-slate-600 dark:text-slate-300">
               <p>🏢 <span className="font-bold text-slate-900 dark:text-slate-100">Registered Firm:</span> DOMOS PROPERTY GLOBAL LIMITED</p>
               <p>📍 <span className="font-bold text-slate-900 dark:text-slate-100">Headquarters:</span> AAU Main Gate Area, Ekpoma, Edo State, Nigeria</p>
-              <p>📞 <span className="font-bold text-slate-900 dark:text-slate-100">Admin Hotline / WhatsApp:</span> 07073537007</p>
-              <p>✉️ <span className="font-bold text-slate-900 dark:text-slate-100">Official Hours:</span> Monday – Saturday (8:00 AM – 6:00 PM)</p>
+              <p>📞 <span className="font-bold text-slate-900 dark:text-slate-100">Admin Hotline:</span> 07073537007</p>
+              <p>✉️ <span className="font-bold text-slate-900 dark:text-slate-100">Official Email:</span> <a href="mailto:domospropertygloballimited@gmail.com" className="text-sky-600 dark:text-sky-400 font-bold hover:underline">domospropertygloballimited@gmail.com</a></p>
+              <p>⏰ <span className="font-bold text-slate-900 dark:text-slate-100">Official Hours:</span> Monday – Saturday (8:00 AM – 6:00 PM)</p>
             </div>
             
             <a
-              href="https://wa.me/2347073537007?text=Hello%20DOMOS%20PROPERTY%20GLOBAL%20LIMITED%2C%20I%20would%20like%20to%20learn%20more%20about%20your%20services."
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold transition-colors shadow-xs w-full justify-center"
+              href="mailto:domospropertygloballimited@gmail.com?subject=DOMOS%20PROPERTY%20Inquiry"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl gold-bg-gradient text-white text-xs font-bold transition-opacity hover:opacity-95 shadow-xs w-full justify-center"
             >
-              <span>💬 Chat with Housing Management on WhatsApp</span>
+              <span>✉️ Send Email to Housing Management</span>
             </a>
           </div>
         </div>
