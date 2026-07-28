@@ -8,6 +8,8 @@ import { Hotel, HotelRoomType } from "../data/hotels";
 import { Car } from "../data/cars";
 import { LandProperty } from "../data/lands";
 import { AgentProfile } from "../data/agents";
+import { ImageUploader } from "../components/ImageUploader";
+
 
 // Client-side canvas image optimizer & downscaler
 const compressImageFile = (file: File): Promise<string> => {
@@ -260,12 +262,14 @@ export default function AdminPage() {
 
   const handleProfileImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.[0]) {
+      const file = e.target.files[0];
       try {
-        const compressed = await compressImageFile(e.target.files[0]);
+        const compressed = await compressImageFile(file);
         setRegProfileImage(compressed);
       } catch (err) {
         console.error("Profile image upload error:", err);
       }
+      e.target.value = "";
     }
   };
 
@@ -1286,19 +1290,12 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Upload Images</label>
-                <input type="file" multiple accept="image/*" ref={fileInputRef} onChange={handleImageUpload} className="text-xs text-slate-500" />
-                {uploading && <p className="text-xs text-amber-500 font-bold mt-1">Compressing images...</p>}
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {uploadedImageUrls.map((url, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
-                      <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeUploadedImage(idx)} className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] w-4 h-4 rounded-bl flex items-center justify-center">✕</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ImageUploader
+                images={uploadedImageUrls}
+                onChange={(urls) => setUploadedImageUrls(urls)}
+                label="Apartment Listing Photos"
+                description="Select multiple photos at once from your phone or laptop. The first image will be set as the main cover photo."
+              />
 
               <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
                 {editingPropId ? "Save Apartment Changes" : "Submit Apartment Listing"}
@@ -1533,18 +1530,12 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Upload Hotel Images</label>
-                <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="text-xs text-slate-500" />
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {uploadedImageUrls.map((url, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
-                      <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeUploadedImage(idx)} className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] w-4 h-4 rounded-bl flex items-center justify-center">✕</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ImageUploader
+                images={uploadedImageUrls}
+                onChange={(urls) => setUploadedImageUrls(urls)}
+                label="Hotel & Suite Photos"
+                description="Upload multiple exterior, reception, or luxury room photos."
+              />
 
               <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
                 {editingHotelId ? "Save Hotel Changes" : "Submit Hotel Listing"}
@@ -1664,18 +1655,12 @@ export default function AdminPage() {
                 <textarea rows={3} value={carDesc} onChange={(e) => setCarDesc(e.target.value)} placeholder="Sunroof, leather interior, custom duty paid..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Upload Car Images</label>
-                <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="text-xs text-slate-500" />
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {uploadedImageUrls.map((url, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
-                      <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeUploadedImage(idx)} className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] w-4 h-4 rounded-bl flex items-center justify-center">✕</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ImageUploader
+                images={uploadedImageUrls}
+                onChange={(urls) => setUploadedImageUrls(urls)}
+                label="Vehicle Listing Photos"
+                description="Upload exterior, interior, engine bay, and wheel photos."
+              />
 
               <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
                 {editingCarId ? "Save Vehicle Changes" : "Submit Vehicle Listing"}
@@ -1786,18 +1771,12 @@ export default function AdminPage() {
                 <textarea rows={3} value={landDesc} onChange={(e) => setLandDesc(e.target.value)} placeholder="Boundary, topography, road access details..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
               </div>
 
-              <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Upload Land Images / Survey</label>
-                <input type="file" multiple accept="image/*" onChange={handleImageUpload} className="text-xs text-slate-500" />
-                <div className="flex gap-2 flex-wrap mt-2">
-                  {uploadedImageUrls.map((url, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-slate-300">
-                      <img src={url} alt="Uploaded" className="w-full h-full object-cover" />
-                      <button type="button" onClick={() => removeUploadedImage(idx)} className="absolute top-0 right-0 bg-rose-600 text-white text-[10px] w-4 h-4 rounded-bl flex items-center justify-center">✕</button>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              <ImageUploader
+                images={uploadedImageUrls}
+                onChange={(urls) => setUploadedImageUrls(urls)}
+                label="Land Plot & Survey Photos"
+                description="Upload site photos, beacon layout, and survey plan documents."
+              />
 
               <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
                 {editingLandId ? "Save Land Changes" : "Submit Land Listing"}
