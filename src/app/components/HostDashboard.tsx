@@ -43,8 +43,20 @@ export const HostDashboard: React.FC = () => {
   const isAgentItem = (item: { agentId?: string; agentPhone?: string }) => {
     if (!currentAgent) return false;
     if (currentAgent.role === "super_admin") return true;
-    if (item.agentId && item.agentId === currentAgent.id) return true;
-    if (item.agentPhone && currentAgent.whatsapp && item.agentPhone === currentAgent.whatsapp) return true;
+    
+    // Primary strict check by unique agent ID
+    if (item.agentId && currentAgent.id && item.agentId === currentAgent.id) return true;
+    
+    // Secondary check by agent WhatsApp phone (excluding generic fallback numbers)
+    if (
+      item.agentPhone &&
+      currentAgent.whatsapp &&
+      item.agentPhone === currentAgent.whatsapp &&
+      item.agentPhone !== "07073537007"
+    ) {
+      return true;
+    }
+    
     return false;
   };
 

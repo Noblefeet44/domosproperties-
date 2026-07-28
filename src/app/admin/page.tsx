@@ -179,12 +179,24 @@ export default function AdminPage() {
 
   const isSuperAdmin = currentAgent?.role === "super_admin";
 
-  // Helper to determine if a listing belongs to the currently logged in agent
+  // Helper to determine if a listing belongs strictly to the currently logged in agent
   const isAgentItem = (item: { agentId?: string; agentPhone?: string }) => {
     if (!currentAgent) return false;
     if (currentAgent.role === "super_admin") return true;
-    if (item.agentId && item.agentId === currentAgent.id) return true;
-    if (item.agentPhone && currentAgent.whatsapp && item.agentPhone === currentAgent.whatsapp) return true;
+    
+    // Primary strict check by unique agent ID
+    if (item.agentId && currentAgent.id && item.agentId === currentAgent.id) return true;
+    
+    // Secondary check by agent WhatsApp phone (excluding generic fallback numbers)
+    if (
+      item.agentPhone &&
+      currentAgent.whatsapp &&
+      item.agentPhone === currentAgent.whatsapp &&
+      item.agentPhone !== "07073537007"
+    ) {
+      return true;
+    }
+    
     return false;
   };
 
@@ -193,14 +205,19 @@ export default function AdminPage() {
   const displayedCars = isSuperAdmin ? cars : cars.filter(isAgentItem);
   const displayedLands = isSuperAdmin ? lands : lands.filter(isAgentItem);
 
-  const displayedPropIds = new Set(displayedProperties.map((p) => p.id));
+  const displayedPropIds = new Set([
+    ...displayedProperties.map((p) => p.id),
+    ...displayedHotels.map((h) => h.id),
+    ...displayedCars.map((c) => c.id),
+    ...displayedLands.map((l) => l.id),
+  ]);
   const displayedBookings = isSuperAdmin
     ? bookings
     : bookings.filter(
         (b) =>
           b.agentId === currentAgent?.id ||
           displayedPropIds.has(b.propertyId) ||
-          (b.guestPhone && currentAgent?.whatsapp && b.guestPhone === currentAgent.whatsapp)
+          (b.guestPhone && currentAgent?.whatsapp && b.guestPhone === currentAgent.whatsapp && b.guestPhone !== "07073537007")
       );
 
   const showNotify = (msg: string) => {
