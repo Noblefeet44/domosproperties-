@@ -18,7 +18,7 @@ export const SearchBar: React.FC = () => {
     "All",
     "AAU Main Gate",
     "Benin-Auchi Expressway",
-    "Ihniduma",
+    "Ihumudumu",
     "University Road",
     "Abuja / Benin City"
   ];

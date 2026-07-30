@@ -1,49 +1,108 @@
-"use client";
+import type { Metadata } from "next";
+import { FAQPageClient } from "../components/FAQPageClient";
 
-import React, { useEffect } from "react";
-import { Navbar } from "../components/Navbar";
-import { FAQ } from "../components/FAQ";
-import { PropertyDetailsModal } from "../components/PropertyDetailsModal";
-import { useApp } from "../context/AppContext";
+export const metadata: Metadata = {
+  title: "Frequently Asked Questions (FAQ) | DOMOS PROPERTY",
+  description: "Find answers to common questions regarding student hostel bookings, inspection fees, legal agreements, and rental process in Ekpoma.",
+  keywords: [
+    "DOMOS PROPERTY FAQ",
+    "hostel booking questions Ekpoma",
+    "AAU student rent process",
+    "Ekpoma hostel inspection fees",
+  ],
+  alternates: {
+    canonical: "https://domosproperty.org/faq",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "Frequently Asked Questions (FAQ) | DOMOS PROPERTY",
+    description: "Find answers to common questions regarding student hostel bookings, inspection fees, legal agreements, and rental process in Ekpoma.",
+    url: "https://domosproperty.org/faq",
+    siteName: "DOMOS PROPERTY GLOBAL LIMITED",
+    locale: "en_NG",
+    type: "website",
+    images: [
+      {
+        url: "/images/ehis_hostel.png",
+        width: 1200,
+        height: 630,
+        alt: "DOMOS PROPERTY FAQ",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Frequently Asked Questions (FAQ) | DOMOS PROPERTY",
+    description: "Find answers to common questions regarding student hostel bookings, inspection fees, legal agreements, and rental process in Ekpoma.",
+    images: ["/images/ehis_hostel.png"],
+  },
+};
 
 export default function FAQPage() {
-  const { setActiveView } = useApp();
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "How do I inspect a hostel or apartment in Ekpoma?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "You can click on any property listing to view photos, amenities, and click 'Make Inquiry' or contact our verified agent on WhatsApp directly to schedule a physical or virtual inspection.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Where are DOMOS PROPERTY hostels located?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Our verified student hostels and executive lodges are strategically located across Ekpoma near Ambrose Alli University (AAU), including AAU Main Gate, Ujoelen, University Road, Ihumudumu, and Market Square.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "What fees are required when renting a property?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Each property page transparently lists the annual/session rent along with any applicable caution fee, agency fee, legal agreement fee, and inspection fee.",
+        },
+      },
+    ],
+  };
 
-  useEffect(() => {
-    setActiveView("faq");
-  }, [setActiveView]);
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: "https://domosproperty.org",
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "FAQ",
+        item: "https://domosproperty.org/faq",
+      },
+    ],
+  };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-slate-950 transition-colors duration-300 relative">
-      {/* Announcement Bar */}
-      <div className="w-full bg-sky-950 text-sky-200 dark:bg-slate-900 dark:text-sky-300 py-2 px-4 text-center text-[10px] sm:text-xs font-black tracking-widest uppercase border-b border-sky-800 flex justify-center items-center gap-2">
-        <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping"></span>
-        <span>DOMOS PROPERTY GLOBAL LIMITED • Premium Hostels & Rental Accommodations</span>
-      </div>
-
-      <Navbar />
-
-      <main className="flex-1 pb-16">
-        <FAQ />
-      </main>
-
-
-
-      <PropertyDetailsModal />
-
-      {/* Footer */}
-      <footer className="border-t border-sky-200/60 dark:border-slate-800 bg-sky-950 text-white py-10 px-4 mt-auto">
-        <div className="w-full max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center text-xs text-sky-300/80 gap-4">
-          <a href="mailto:domospropertygloballimited@gmail.com" className="hover:text-amber-300 transition-colors font-bold flex items-center gap-1">
-            ✉️ domospropertygloballimited@gmail.com
-          </a>
-          <p>© {new Date().getFullYear()} DOMOS PROPERTY GLOBAL LIMITED. All rights reserved.</p>
-          <div className="flex gap-4 text-[10px] text-sky-300/60">
-            <span className="hover:underline cursor-pointer">Terms & Conditions</span>
-            <span className="hover:underline cursor-pointer">Privacy Policy</span>
-          </div>
-        </div>
-      </footer>
-    </div>
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <FAQPageClient />
+    </>
   );
 }

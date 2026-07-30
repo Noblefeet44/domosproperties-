@@ -8,7 +8,7 @@ import { useApp } from "../context/AppContext";
 const STATIC_COORDINATES: Record<string, { x: number; y: number }> = {
   "1": { x: 72, y: 24 }, // Ehis Hostel (AAU Main Gate)
   "2": { x: 28, y: 62 }, // Treasure Hostel (Benin-Auchi Expressway)
-  "3": { x: 52, y: 38 }, // Elite Residence (Ihniduma)
+  "3": { x: 52, y: 38 }, // Elite Residence (Ihumudumu)
   "4": { x: 78, y: 68 }, // Royal Villa (University Road)
 };
 
@@ -29,7 +29,7 @@ export const NeighborhoodMap: React.FC<NeighborhoodMapProps> = ({ properties }) 
     let base = { x: 50, y: 50 };
     switch (property.neighborhood) {
       case "AAU Main Gate": base = { x: 70, y: 25 }; break;
-      case "Ihniduma": base = { x: 50, y: 40 }; break;
+      case "Ihumudumu": base = { x: 50, y: 40 }; break;
       case "University Road": base = { x: 75, y: 65 }; break;
       case "Benin-Auchi Expressway": base = { x: 30, y: 60 }; break;
       case "Royal Market": base = { x: 45, y: 75 }; break;
@@ -102,7 +102,7 @@ export const NeighborhoodMap: React.FC<NeighborhoodMapProps> = ({ properties }) 
 
           {/* Label Districts */}
           <text x="68" y="28" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">AAU Main Gate</text>
-          <text x="46" y="36" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">Ihniduma</text>
+          <text x="46" y="36" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">Ihumudumu</text>
           <text x="75" y="62" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">University Road</text>
           <text x="18" y="58" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">Expressway Zone</text>
           <text x="42" y="78" className="text-[2.2px] font-black uppercase tracking-widest fill-sky-800 dark:fill-sky-300">Royal Market</text>

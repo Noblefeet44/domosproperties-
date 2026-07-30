@@ -25,6 +25,7 @@ export const HostDashboard: React.FC = () => {
     "24/7 Gated Security Guard",
     "Solar Power & Inverter Backup",
     "Standby Generator Backup",
+    "PVC Ceiling",
     "Tiled Flooring & POP Ceilings",
     "Fenced Compound & Security Gate",
     "Reading Study Desk & Chair",
@@ -200,7 +201,7 @@ export const HostDashboard: React.FC = () => {
                 >
                   <option value="AAU Main Gate">AAU Main Gate</option>
                   <option value="Benin-Auchi Expressway">Benin-Auchi Expressway</option>
-                  <option value="Ihniduma">Ihniduma</option>
+                  <option value="Ihumudumu">Ihumudumu</option>
                   <option value="University Road">University Road</option>
                   <option value="Royal Market">Royal Market</option>
                 </select>

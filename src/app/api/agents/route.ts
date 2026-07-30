@@ -102,18 +102,32 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status } = body;
-    if (!id || !status) {
-      return NextResponse.json({ error: "Agent ID and status required" }, { status: 400 });
+    const { id, status, name, whatsapp } = body;
+    if (!id) {
+      return NextResponse.json({ error: "Agent ID is required" }, { status: 400 });
     }
 
+    // Build the update payload with only the fields that were provided
+    const updateFields: Partial<AgentProfile> = {};
+    if (status) updateFields.status = status;
+    if (name !== undefined) updateFields.name = name;
+    if (whatsapp !== undefined) updateFields.whatsapp = whatsapp;
+
     const currentMemory = getMemoryAgents();
-    const updatedMemory = currentMemory.map((a) => (a.id === id ? { ...a, status } : a));
+    const updatedMemory = currentMemory.map((a) =>
+      a.id === id ? { ...a, ...updateFields } : a
+    );
     setMemoryAgents(updatedMemory);
 
     const supabase = await createClient();
     if (supabase) {
-      await supabase.from("agent_profiles").update({ status }).eq("id", id);
+      // Map camelCase fields to snake_case DB columns
+      const dbUpdate: Record<string, string> = {};
+      if (status) dbUpdate.status = status;
+      if (name !== undefined) dbUpdate.name = name;
+      if (whatsapp !== undefined) dbUpdate.whatsapp = whatsapp;
+
+      await supabase.from("agent_profiles").update(dbUpdate).eq("id", id);
     }
 
     return NextResponse.json({ success: true });

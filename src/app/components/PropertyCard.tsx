@@ -1,8 +1,11 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { Property } from "../data/properties";
 import { useApp } from "../context/AppContext";
+import { getPropertySlug } from "@/lib/slug";
 
 interface PropertyCardProps {
   property: Property;
@@ -11,30 +14,31 @@ interface PropertyCardProps {
 export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const { setSelectedProperty } = useApp();
 
-  const availableRoomsCount = property.rooms ? property.rooms.filter(r => r.status === "available").length : 2;
+  const slug = getPropertySlug(property);
+  const mainImage = property.images && property.images.length > 0 ? property.images[0] : "/images/ehis_hostel.png";
 
   return (
     <div 
-      onClick={() => setSelectedProperty(property)}
-      className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 cursor-pointer"
+      className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 transition-all hover:shadow-lg"
     >
-      {/* Property Image Container */}
-      <div className="relative h-60 w-full overflow-hidden">
-        <img
-          src={property.images[0] || "/images/ehis_hostel.png"}
+      {/* Property Image Container with next/image */}
+      <Link href={`/properties/${slug}`} className="relative h-60 w-full overflow-hidden block bg-slate-200 dark:bg-slate-800">
+        <Image
+          src={mainImage}
           alt={property.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
           loading="lazy"
         />
 
         {/* Featured Badge */}
         {property.featured && (
-          <span className="absolute top-3 left-3 bg-sky-950/80 backdrop-blur-xs text-white text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border border-sky-400/40 shadow-md flex items-center gap-1">
+          <span className="absolute top-3 left-3 bg-sky-950/80 backdrop-blur-xs text-white text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border border-sky-400/40 shadow-md flex items-center gap-1 z-10">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> Verified Hostel
           </span>
         )}
-
-      </div>
+      </Link>
 
       {/* Card Content */}
       <div className="p-5 flex flex-col flex-1">
@@ -55,17 +59,19 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
               />
             </svg>
             <span className="text-slate-800 dark:text-slate-200 font-bold">
-              {property.rating.toFixed(1)}
+              {property.rating ? property.rating.toFixed(1) : "5.0"}
             </span>
             <span className="text-slate-400 dark:text-slate-500 font-normal text-[10px]">
-              ({property.reviewsCount})
+              ({property.reviewsCount || 0})
             </span>
           </div>
         </div>
 
         {/* Title */}
         <h3 className="text-base font-black text-slate-900 dark:text-slate-100 line-clamp-1 mb-2">
-          {property.title}
+          <Link href={`/properties/${slug}`} className="hover:text-amber-500 transition-colors">
+            {property.title}
+          </Link>
         </h3>
 
         {/* Details badges */}
@@ -108,16 +114,23 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
               per session / year
             </span>
           </div>
-          <button
-            onClick={() => setSelectedProperty(property)}
-            className="text-xs font-bold px-4 py-2.5 rounded-xl gold-bg-gradient text-white hover:opacity-95 transition-all shadow-md cursor-pointer flex items-center gap-1"
-          >
-            <span>Inquire</span>
-            <span className="text-[10px]">→</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/properties/${slug}`}
+              className="text-xs font-bold px-3 py-2 rounded-xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:bg-amber-500 transition-all shadow-md flex items-center gap-1"
+            >
+              Details
+            </Link>
+            <button
+              onClick={() => setSelectedProperty(property)}
+              className="text-xs font-bold px-3 py-2 rounded-xl gold-bg-gradient text-white hover:opacity-95 transition-all shadow-md cursor-pointer flex items-center gap-1"
+            >
+              <span>Inquire</span>
+              <span className="text-[10px]">→</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
 };
-

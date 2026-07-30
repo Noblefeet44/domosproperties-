@@ -44,6 +44,7 @@ interface AppContextType {
   loginAgent: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logoutAgent: () => void;
   updateAgentStatus: (agentId: string, status: 'approved' | 'banned' | 'pending') => Promise<void>;
+  updateAgentInfo: (agentId: string, fields: { name?: string; whatsapp?: string }) => Promise<void>;
   refreshAgents: () => Promise<void>;
 
   // Datasets
@@ -218,6 +219,22 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshAgents();
     } catch (e) {
       console.warn("API updateAgentStatus error:", e);
+    }
+  };
+
+  const updateAgentInfo = async (agentId: string, fields: { name?: string; whatsapp?: string }) => {
+    setAllAgents((prev) =>
+      prev.map((a) => (a.id === agentId ? { ...a, ...fields } : a))
+    );
+    try {
+      await fetch("/api/agents", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: agentId, ...fields }),
+      });
+      await refreshAgents();
+    } catch (e) {
+      console.warn("API updateAgentInfo error:", e);
     }
   };
 
@@ -680,6 +697,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         loginAgent,
         logoutAgent,
         updateAgentStatus,
+        updateAgentInfo,
         refreshAgents,
         properties,
         hotels,
