@@ -4,6 +4,7 @@ import { Navbar } from "../../components/Navbar";
 import YouTubePlayer from "../../components/YouTubePlayer";
 import { getAllProperties, getPropertyBySlugOrId } from "@/lib/properties";
 import { getPropertySlug } from "@/lib/slug";
+import { getListingCardMedia } from "@/lib/youtube";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -112,7 +113,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
   const similarProperties = allProps.filter((p) => p.id !== property.id).slice(0, 3);
   const cleanSlug = getPropertySlug(property);
   const canonicalUrl = `https://domosproperty.org/properties/${cleanSlug}`;
-  const mainImage = property.images && property.images.length > 0 ? property.images[0] : "/images/ehis_hostel.png";
+  const cardMedia = getListingCardMedia(property, "/images/ehis_hostel.png");
+  const mainImage = cardMedia.imageUrl;
 
   const totalFees =
     (property.cautionFee || 0) +
@@ -239,6 +241,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
               priority
               sizes="(max-width: 768px) 100vw, 66vw"
               className="object-cover"
+              unoptimized={mainImage.includes("img.youtube.com")}
             />
           </div>
           <div className="hidden md:flex flex-col gap-4 h-96">

@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { LandProperty } from "../data/lands";
+import YouTubePlayer from "./YouTubePlayer";
+import { getListingCardMedia } from "@/lib/youtube";
 
 export const LandDetailsModal: React.FC = () => {
   const { lands, allAgents, selectedLand, setSelectedLand, addBooking } = useApp();
@@ -69,16 +71,34 @@ export const LandDetailsModal: React.FC = () => {
         {/* Scrollable Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
-          {/* 1. Gallery Showcase at top */}
-          <div className="space-y-3">
-            <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-              <img
-                src={selectedLand.images?.[activeImageIndex] || selectedLand.images?.[0]}
-                alt={selectedLand.title}
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            </div>
-          </div>
+          {/* 1. Gallery / Video Showcase at top */}
+          {(() => {
+            const { imageUrl, hasVideo } = getListingCardMedia(selectedLand, "/images/treasure_hostel.png");
+            const hasCustomPhotos = selectedLand.images && selectedLand.images.length > 0 && selectedLand.images[0] !== "/images/treasure_hostel.png" && selectedLand.images[0] !== "/images/ehis_hostel.png";
+            const displayImg = selectedLand.images?.[activeImageIndex] && selectedLand.images[activeImageIndex] !== "/images/treasure_hostel.png" ? selectedLand.images[activeImageIndex] : imageUrl;
+            const showVideo = hasVideo && (!hasCustomPhotos || activeImageIndex === 0);
+
+            return (
+              <div className="space-y-3">
+                {showVideo ? (
+                  <YouTubePlayer
+                    videoId={selectedLand.youtubeVideoId}
+                    url={selectedLand.youtubeUrl}
+                    thumbnailUrl={selectedLand.youtubeThumbnail || imageUrl}
+                    title={selectedLand.title}
+                  />
+                ) : (
+                  <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                    <img
+                      src={displayImg || imageUrl}
+                      alt={selectedLand.title}
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 2. Land Overview & Document Details */}
           <div className="space-y-3">

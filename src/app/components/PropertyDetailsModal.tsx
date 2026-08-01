@@ -5,6 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 import YouTubePlayer from "./YouTubePlayer";
+import { getListingCardMedia } from "@/lib/youtube";
 
 export const PropertyDetailsModal: React.FC = () => {
   const { properties, allAgents, selectedProperty, setSelectedProperty, addBooking } = useApp();
@@ -114,35 +115,33 @@ export const PropertyDetailsModal: React.FC = () => {
     setStep("payment");
   };
 
-  const prefilledWhatsappMsg = `Hello ${encodeURIComponent(listingAgent?.name || "Agent")}, I am inquiring about leasing ${encodeURIComponent(selectedProperty.title)} at ${encodeURIComponent(selectedProperty.location)}.%0A%0A👤 Applicant Details:%0A- Name: ${encodeURIComponent(fullName || "Valued Prospect")}%0A- Phone/WhatsApp: ${encodeURIComponent(whatsapp || "N/A")}%0A- Occupation: ${encodeURIComponent(occupation || "N/A")}%0A- Move-In Date: ${encodeURIComponent(moveInDate || "Immediate")}%0A%0A💰 Fee Breakdown:%0A- Annual Rent: ₦${rentFeeAmount.toLocaleString()}${legalFeeAmount > 0 ? `%0A- Legal Fee: ₦${legalFeeAmount.toLocaleString()}` : ""}${inspectionFeeAmount > 0 ? `%0A- Inspection Fee: ₦${inspectionFeeAmount.toLocaleString()}` : ""}${agencyFeeAmount > 0 ? `%0A- Agency Fee: ₦${agencyFeeAmount.toLocaleString()}` : ""}${cautionFeeAmount > 0 ? `%0A- Caution Deposit: ₦${cautionFeeAmount.toLocaleString()}` : ""}${reservationFeeAmount > 0 ? `%0A- Reservation Deposit: ₦${reservationFeeAmount.toLocaleString()}` : ""}%0A%0ATotal Package Amount: ₦${totalCalculatedPayment.toLocaleString()}`;
+  const prefilledWhatsappMsg = `Hello ${encodeURIComponent(listingAgent?.name || "Agent")}, I am inquiring about leasing ${encodeURIComponent(selectedProperty?.title || "")} at ${encodeURIComponent(selectedProperty?.location || "")}.%0A%0A👤 Applicant Details:%0A- Name: ${encodeURIComponent(fullName || "Valued Prospect")}%0A- Phone/WhatsApp: ${encodeURIComponent(whatsapp || "N/A")}%0A- Occupation: ${encodeURIComponent(occupation || "N/A")}%0A- Move-In Date: ${encodeURIComponent(moveInDate || "Immediate")}%0A%0A💰 Fee Breakdown:%0A- Annual Rent: ₦${rentFeeAmount.toLocaleString()}${legalFeeAmount > 0 ? `%0A- Legal Fee: ₦${legalFeeAmount.toLocaleString()}` : ""}${inspectionFeeAmount > 0 ? `%0A- Inspection Fee: ₦${inspectionFeeAmount.toLocaleString()}` : ""}${agencyFeeAmount > 0 ? `%0A- Agency Fee: ₦${agencyFeeAmount.toLocaleString()}` : ""}${cautionFeeAmount > 0 ? `%0A- Caution Deposit: ₦${cautionFeeAmount.toLocaleString()}` : ""}${reservationFeeAmount > 0 ? `%0A- Reservation Deposit: ₦${reservationFeeAmount.toLocaleString()}` : ""}%0A%0ATotal Package Amount: ₦${totalCalculatedPayment.toLocaleString()}`;
 
   const directWhatsappUrl = `https://wa.me/234${agentCleanPhone}?text=${prefilledWhatsappMsg}`;
 
+  const { imageUrl: modalCardImageUrl, hasVideo: modalCardHasVideo } = getListingCardMedia(selectedProperty || {}, "/images/ehis_hostel.png");
+  const hasCustomPhotos = Boolean(selectedProperty?.images && selectedProperty.images.length > 0 && selectedProperty.images[0] !== "/images/ehis_hostel.png");
+  const showVideoShowcase = modalCardHasVideo && (!hasCustomPhotos || selectedImageIdx === 0);
+
+  if (!selectedProperty) return null;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-in fade-in duration-200">
-      <div 
-        ref={modalContainerRef}
-        className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden flex flex-col max-h-[90vh]"
-      >
-        {/* Sticky Header */}
+      <div className="relative w-full max-w-4xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 my-8 overflow-hidden flex flex-col max-h-[90vh]">
+        {/* Modal Header */}
         <div className="p-5 sm:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md z-20">
           <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-extrabold tracking-widest uppercase text-amber-500 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
-                🏢 Apartment Listing
-              </span>
-              <span className="text-[10px] font-bold text-slate-400">
-                Ref ID: #{selectedProperty.id}
-              </span>
-            </div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1 line-clamp-1">
+            <span className="text-[10px] font-extrabold tracking-widest uppercase text-amber-500 bg-amber-50 dark:bg-amber-950/50 px-2.5 py-1 rounded-full border border-amber-200 dark:border-amber-900/50">
+              🏢 Apartment Listing
+            </span>
+            <span className="text-[10px] font-bold text-slate-400 ml-2">
+              Ref ID: #{selectedProperty.id}
+            </span>
+            <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white mt-1">
               {selectedProperty.title}
             </h2>
-            <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-              <span>📍</span> {selectedProperty.location}
-            </p>
+            <p className="text-xs text-slate-500">📍 {selectedProperty.location}</p>
           </div>
-          
           <button
             onClick={() => setSelectedProperty(null)}
             className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300 font-bold flex items-center justify-center transition-colors cursor-pointer"
@@ -157,16 +156,25 @@ export const PropertyDetailsModal: React.FC = () => {
           {/* STEP 1: PROPERTY DETAILS VIEW */}
           {step === "details" && (
             <>
-              {/* 1. Original Gallery Showcase at top */}
+              {/* 1. Gallery / Video Showcase at top */}
               <div className="space-y-3">
-                <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-                  <img
-                    src={selectedProperty.images[selectedImageIdx] || selectedProperty.images[0]}
-                    alt={selectedProperty.title}
-                    className="w-full h-full object-cover transition-all duration-300"
+                {showVideoShowcase ? (
+                  <YouTubePlayer
+                    videoId={selectedProperty.youtubeVideoId}
+                    url={selectedProperty.youtubeUrl}
+                    thumbnailUrl={selectedProperty.youtubeThumbnail || modalCardImageUrl}
+                    title={selectedProperty.title}
                   />
-                </div>
-                {selectedProperty.images.length > 1 && (
+                ) : (
+                  <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                    <img
+                      src={selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}
+                      alt={selectedProperty.title}
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                  </div>
+                )}
+                {hasCustomPhotos && selectedProperty.images.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-1">
                     {selectedProperty.images.map((img, idx) => (
                       <button
@@ -556,45 +564,45 @@ export const PropertyDetailsModal: React.FC = () => {
             </div>
           )}
 
-          {/* 5. SIMILAR APARTMENTS SECTION (Across all agents) */}
-          {similarProperties.length > 0 && (
-            <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>🏢</span> Similar Apartments & Lodges You Might Like
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {similarProperties.map((simProp) => {
-                  const simAgent = allAgents.find((a) => a.id === simProp.agentId) || allAgents[0];
-                  return (
-                    <div
-                      key={simProp.id}
-                      onClick={() => handleSelectSimilarProperty(simProp)}
-                      className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
-                    >
-                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
-                        <img
-                          src={simProp.images[0] || "/images/ehis_hostel.png"}
-                          alt={simProp.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                        />
-                      </div>
-                      <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
-                        {simProp.title}
-                      </h4>
-                      <p className="text-[11px] font-black text-amber-500">
-                        ₦{simProp.price.toLocaleString()} / year
-                      </p>
-                      <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200 dark:border-slate-700/50">
-                        <img src={simAgent.profileImage || "/images/ehis_hostel.png"} alt={simAgent.name} className="w-4 h-4 rounded-full object-cover" />
-                        <span className="text-[10px] text-slate-400 line-clamp-1">{simAgent.name}</span>
-                      </div>
+                {/* 5. SIMILAR APARTMENTS SECTION (Across all agents) */}
+                {similarProperties.length > 0 && (
+                  <div className="space-y-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+                    <h3 className="text-sm font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>🏢</span> Similar Apartments & Lodges You Might Like
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {similarProperties.map((simProp) => {
+                        const simAgent = allAgents.find((a) => a.id === simProp.agentId) || allAgents[0];
+                        const { imageUrl: simImgUrl } = getListingCardMedia(simProp, "/images/ehis_hostel.png");
+                        return (
+                          <div
+                            key={simProp.id}
+                            onClick={() => handleSelectSimilarProperty(simProp)}
+                            className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
+                          >
+                            <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+                              <img
+                                src={simImgUrl}
+                                alt={simProp.title}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                              />
+                            </div>
+                            <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
+                              {simProp.title}
+                            </h4>
+                            <p className="text-[11px] font-black text-amber-500">
+                              ₦{simProp.price.toLocaleString()} / year
+                            </p>
+                            <div className="flex items-center gap-1.5 pt-1 border-t border-slate-200 dark:border-slate-700/50">
+                              <img src={simAgent.profileImage || "/images/ehis_hostel.png"} alt={simAgent.name} className="w-4 h-4 rounded-full object-cover" />
+                              <span className="text-[10px] text-slate-400 line-clamp-1">{simAgent.name}</span>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
+                  </div>
+                )}
         </div>
       </div>
     </div>

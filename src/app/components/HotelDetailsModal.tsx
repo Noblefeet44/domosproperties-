@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Hotel } from "../data/hotels";
+import YouTubePlayer from "./YouTubePlayer";
+import { getListingCardMedia } from "@/lib/youtube";
 
 export const HotelDetailsModal: React.FC = () => {
   const { hotels, allAgents, selectedHotel, setSelectedHotel, addBooking } = useApp();
@@ -119,16 +121,34 @@ export const HotelDetailsModal: React.FC = () => {
         {/* Scrollable Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
-          {/* 1. Gallery Showcase at top */}
-          <div className="space-y-3">
-            <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-              <img
-                src={activeRoom?.image || selectedHotel.images?.[activeImageIndex] || selectedHotel.images?.[0]}
-                alt={selectedHotel.title}
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            </div>
-          </div>
+          {/* 1. Gallery / Video Showcase at top */}
+          {(() => {
+            const { imageUrl, hasVideo } = getListingCardMedia(selectedHotel, "/images/ehis_hostel.png");
+            const hasCustomPhotos = selectedHotel.images && selectedHotel.images.length > 0 && selectedHotel.images[0] !== "/images/ehis_hostel.png";
+            const displayImg = activeRoom?.image || (selectedHotel.images?.[activeImageIndex] !== "/images/ehis_hostel.png" ? selectedHotel.images?.[activeImageIndex] : imageUrl);
+            const showVideo = hasVideo && !activeRoom && (!hasCustomPhotos || activeImageIndex === 0);
+
+            return (
+              <div className="space-y-3">
+                {showVideo ? (
+                  <YouTubePlayer
+                    videoId={selectedHotel.youtubeVideoId}
+                    url={selectedHotel.youtubeUrl}
+                    thumbnailUrl={selectedHotel.youtubeThumbnail || imageUrl}
+                    title={selectedHotel.title}
+                  />
+                ) : (
+                  <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                    <img
+                      src={displayImg || imageUrl}
+                      alt={selectedHotel.title}
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 2. Hotel Overview & Amenities */}
           <div className="space-y-3">

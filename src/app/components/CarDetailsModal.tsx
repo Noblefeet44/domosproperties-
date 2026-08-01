@@ -4,6 +4,8 @@
 import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Car } from "../data/cars";
+import YouTubePlayer from "./YouTubePlayer";
+import { getListingCardMedia } from "@/lib/youtube";
 
 export const CarDetailsModal: React.FC = () => {
   const { cars, allAgents, selectedCar, setSelectedCar, addBooking } = useApp();
@@ -73,16 +75,34 @@ export const CarDetailsModal: React.FC = () => {
         {/* Scrollable Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
-          {/* 1. Gallery Showcase at top */}
-          <div className="space-y-3">
-            <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-              <img
-                src={selectedCar.images?.[activeImageIndex] || selectedCar.images?.[0]}
-                alt={selectedCar.title}
-                className="w-full h-full object-cover transition-all duration-300"
-              />
-            </div>
-          </div>
+          {/* 1. Gallery / Video Showcase at top */}
+          {(() => {
+            const { imageUrl, hasVideo } = getListingCardMedia(selectedCar, "/images/royal_villa.png");
+            const hasCustomPhotos = selectedCar.images && selectedCar.images.length > 0 && selectedCar.images[0] !== "/images/royal_villa.png" && selectedCar.images[0] !== "/images/ehis_hostel.png";
+            const displayImg = selectedCar.images?.[activeImageIndex] && selectedCar.images[activeImageIndex] !== "/images/royal_villa.png" ? selectedCar.images[activeImageIndex] : imageUrl;
+            const showVideo = hasVideo && (!hasCustomPhotos || activeImageIndex === 0);
+
+            return (
+              <div className="space-y-3">
+                {showVideo ? (
+                  <YouTubePlayer
+                    videoId={selectedCar.youtubeVideoId}
+                    url={selectedCar.youtubeUrl}
+                    thumbnailUrl={selectedCar.youtubeThumbnail || imageUrl}
+                    title={selectedCar.title}
+                  />
+                ) : (
+                  <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
+                    <img
+                      src={displayImg || imageUrl}
+                      alt={selectedCar.title}
+                      className="w-full h-full object-cover transition-all duration-300"
+                    />
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* 2. Vehicle Description & Features */}
           <div className="space-y-3">
