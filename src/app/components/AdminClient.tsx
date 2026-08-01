@@ -9,6 +9,7 @@ import { Car } from "../data/cars";
 import { LandProperty } from "../data/lands";
 import { AgentProfile } from "../data/agents";
 import { ImageUploader } from "../components/ImageUploader";
+import YouTubeVideoUploader from "./YouTubeVideoUploader";
 
 
 // Client-side canvas image optimizer & downscaler
@@ -121,8 +122,11 @@ export default function AdminPage() {
     }
   }, [currentAgent?.id]);
 
-  // Images state for active form
+  // Images & Video state for active form
   const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
+  const [youtubeVideoId, setYoutubeVideoId] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState("");
 
   // 1. PROPERTY FORM STATES
   const [editingPropId, setEditingPropId] = useState<string | null>(null);
@@ -333,6 +337,9 @@ export default function AdminPage() {
 
   const resetAllForms = () => {
     setUploadedImageUrls([]);
+    setYoutubeVideoId("");
+    setYoutubeUrl("");
+    setYoutubeThumbnail("");
     setEditingPropId(null);
     setPropTitle("");
     setPropDesc("");
@@ -385,6 +392,9 @@ export default function AdminPage() {
         amenities: propAmenities,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("Apartment updated successfully!");
     } else {
@@ -405,6 +415,9 @@ export default function AdminPage() {
         amenities: propAmenities,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("New apartment listing created successfully!");
     }
@@ -431,6 +444,9 @@ export default function AdminPage() {
         rooms: hotelRooms,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("Hotel updated successfully!");
     } else {
@@ -447,6 +463,9 @@ export default function AdminPage() {
         rooms: hotelRooms,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("New hotel listed successfully!");
     }
@@ -476,6 +495,9 @@ export default function AdminPage() {
         features: carFeatures,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("Vehicle updated successfully!");
     } else {
@@ -496,6 +518,9 @@ export default function AdminPage() {
         features: carFeatures,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("New vehicle listed successfully!");
     }
@@ -521,6 +546,9 @@ export default function AdminPage() {
         features: landFeatures,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("Land listing updated successfully!");
     } else {
@@ -537,6 +565,9 @@ export default function AdminPage() {
         features: landFeatures,
         agentPhone,
         images: finalImages,
+        youtubeVideoId: youtubeVideoId || undefined,
+        youtubeUrl: youtubeUrl || undefined,
+        youtubeThumbnail: youtubeThumbnail || undefined,
       });
       showNotify("New land plot listed successfully!");
     }
@@ -1226,6 +1257,9 @@ export default function AdminPage() {
                         setPropAmenities(p.amenities || []);
                         setPropAgentPhone(p.agentPhone || currentAgent.whatsapp);
                         setUploadedImageUrls(p.images || []);
+                        setYoutubeVideoId(p.youtubeVideoId || "");
+                        setYoutubeUrl(p.youtubeUrl || "");
+                        setYoutubeThumbnail(p.youtubeThumbnail || "");
                         setFormMode("edit");
                       }}
                       className="flex-1 py-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs hover:bg-sky-500/20"
@@ -1356,6 +1390,30 @@ export default function AdminPage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* YouTube Video Tour Uploader */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  YouTube Property Video Tour (Optional)
+                </label>
+                <YouTubeVideoUploader
+                  currentVideoId={youtubeVideoId}
+                  currentVideoUrl={youtubeUrl}
+                  currentThumbnailUrl={youtubeThumbnail}
+                  title={propTitle ? `${propTitle} - Video Tour` : "DomosProperty Video Tour"}
+                  description={propDesc || "Official Video Tour on DomosProperty"}
+                  onUploadSuccess={(result) => {
+                    setYoutubeVideoId(result.videoId);
+                    setYoutubeUrl(result.videoUrl);
+                    setYoutubeThumbnail(result.thumbnailUrl);
+                  }}
+                  onRemoveVideo={() => {
+                    setYoutubeVideoId("");
+                    setYoutubeUrl("");
+                    setYoutubeThumbnail("");
+                  }}
+                />
               </div>
 
               <ImageUploader
