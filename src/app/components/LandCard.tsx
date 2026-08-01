@@ -11,21 +11,43 @@ interface LandCardProps {
 export const LandCard: React.FC<LandCardProps> = ({ land }) => {
   const { setSelectedLand } = useApp();
 
-  const primaryImage = land.images?.[0] || "/images/treasure_hostel.png";
+  const hasRealImages = land.images && land.images.length > 0 && !land.images[0]?.startsWith("/images/");
+  const hasYouTube = !!(land.youtubeVideoId || land.youtubeUrl);
+  const showVideoCard = !hasRealImages && hasYouTube;
+  const primaryImage = hasRealImages ? land.images[0] : "/images/treasure_hostel.png";
+
+  // Extract YouTube video ID
+  let ytVideoId = land.youtubeVideoId;
+  if (!ytVideoId && land.youtubeUrl) {
+    const match = land.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+    if (match) ytVideoId = match[1];
+  }
 
   return (
     <div
       onClick={() => setSelectedLand(land)}
       className="group relative bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col h-full"
     >
-      {/* Image Header */}
+      {/* Image / YouTube Video Header */}
       <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        <img
-          src={primaryImage}
-          alt={land.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
+        {showVideoCard && ytVideoId ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${ytVideoId}?rel=0&modestbranding=1`}
+            title={land.title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <>
+            <img
+              src={primaryImage}
+              alt={land.title}
+              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
+          </>
+        )}
 
         {/* Badges */}
         <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">

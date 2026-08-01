@@ -15,22 +15,42 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const { setSelectedProperty } = useApp();
 
   const slug = getPropertySlug(property);
-  const mainImage = property.images && property.images.length > 0 ? property.images[0] : "/images/ehis_hostel.png";
+  const hasRealImages = property.images && property.images.length > 0 && !property.images[0]?.startsWith("/images/");
+  const hasYouTube = !!(property.youtubeVideoId || property.youtubeUrl);
+  const showVideoCard = !hasRealImages && hasYouTube;
+  const mainImage = hasRealImages ? property.images[0] : "/images/ehis_hostel.png";
+
+  // Extract YouTube video ID from videoId or URL
+  let ytVideoId = property.youtubeVideoId;
+  if (!ytVideoId && property.youtubeUrl) {
+    const match = property.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
+    if (match) ytVideoId = match[1];
+  }
 
   return (
     <div 
       className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 transition-all hover:shadow-lg"
     >
-      {/* Property Image Container with next/image */}
+      {/* Property Image / YouTube Video Container */}
       <Link href={`/properties/${slug}`} className="relative h-60 w-full overflow-hidden block bg-slate-200 dark:bg-slate-800">
-        <Image
-          src={mainImage}
-          alt={property.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-        />
+        {showVideoCard && ytVideoId ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${ytVideoId}?rel=0&modestbranding=1`}
+            title={property.title}
+            className="w-full h-full border-0"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
+        ) : (
+          <Image
+            src={mainImage}
+            alt={property.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+          />
+        )}
 
         {/* Featured Badge */}
         {property.featured && (
