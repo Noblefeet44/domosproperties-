@@ -51,6 +51,44 @@ export async function sendTelegramMessage(
 }
 
 /**
+ * Edits an existing Telegram message (text + inline keyboard).
+ * Used for toggling inline buttons in-place without sending new messages.
+ */
+export async function editTelegramMessage(
+  chatId: string | number,
+  messageId: number,
+  text: string,
+  extraOptions: Record<string, any> = {}
+): Promise<boolean> {
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  if (!token) return false;
+
+  try {
+    const res = await fetch(`https://api.telegram.org/bot${token}/editMessageText`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        chat_id: chatId,
+        message_id: messageId,
+        text,
+        parse_mode: "HTML",
+        ...extraOptions,
+      }),
+    });
+
+    const data: TelegramResponse = await res.json();
+    if (!res.ok || !data.ok) {
+      console.warn("Telegram editMessageText error:", data.description || res.statusText);
+      return false;
+    }
+    return true;
+  } catch (err) {
+    console.error("Failed to edit Telegram message:", err);
+    return false;
+  }
+}
+
+/**
  * Gets direct download URL for a file sent to the Telegram bot (photos/videos).
  */
 export async function getTelegramFileUrl(fileId: string): Promise<string | null> {

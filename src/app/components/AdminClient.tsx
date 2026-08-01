@@ -1781,6 +1781,50 @@ export default function AdminPage() {
                 <textarea rows={3} value={carDesc} onChange={(e) => setCarDesc(e.target.value)} placeholder="Sunroof, leather interior, custom duty paid..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
               </div>
 
+              {/* CAR FEATURES CHECKLIST */}
+              <div className="p-4 rounded-2xl bg-sky-50/60 dark:bg-slate-800/60 border border-sky-200/80 dark:border-slate-700 space-y-3">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-sky-800 dark:text-sky-300 block border-b border-sky-200/60 dark:border-slate-700 pb-2">
+                  🚗 Select Vehicle Features ({carFeatures.length} Selected)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    "Leather Interior",
+                    "Sunroof / Panoramic Roof",
+                    "Reverse Camera / Parking Sensors",
+                    "Cruise Control",
+                    "Bluetooth / Apple CarPlay / Android Auto",
+                    "Navigation System / GPS",
+                    "Keyless Entry & Push Start",
+                    "Alloy Wheels",
+                    "LED / Xenon Headlights",
+                    "Air Conditioning (Dual Zone)",
+                    "Tinted Windows",
+                    "Dashcam / Security Tracker",
+                    "Full Service History / Duty Paid",
+                    "Low Mileage / Clean Title"
+                  ].map((feature) => {
+                    const isSelected = carFeatures.includes(feature);
+                    return (
+                      <label key={feature} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-sky-100/50 dark:hover:bg-slate-700/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            if (isSelected) {
+                              setCarFeatures((prev) => prev.filter((a) => a !== feature));
+                            } else {
+                              setCarFeatures((prev) => [...prev, feature]);
+                            }
+                          }}
+                          className="rounded border-slate-300 text-sky-500 focus:ring-sky-500 w-4 h-4"
+                        />
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{feature}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+
               <ImageUploader
                 images={uploadedImageUrls}
                 onChange={(urls) => setUploadedImageUrls(urls)}
@@ -1895,6 +1939,46 @@ export default function AdminPage() {
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Land Description</label>
                 <textarea rows={3} value={landDesc} onChange={(e) => setLandDesc(e.target.value)} placeholder="Boundary, topography, road access details..." className="w-full p-2.5 text-xs rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700" />
+              </div>
+
+              {/* LAND FEATURES CHECKLIST */}
+              <div className="p-4 rounded-2xl bg-emerald-50/60 dark:bg-slate-800/60 border border-emerald-200/80 dark:border-slate-700 space-y-3">
+                <span className="text-xs font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 block border-b border-emerald-200/60 dark:border-slate-700 pb-2">
+                  📐 Select Land Features ({landFeatures.length} Selected)
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  {[
+                    "Tarred Access Road",
+                    "Perimeter Fencing",
+                    "Electricity Nearby (PHCN Pole)",
+                    "Gated Estate / Security",
+                    "Commercial Area Frontage",
+                    "Close to University / School",
+                    "Survey Plan Available",
+                    "Drainage / Good Terrain",
+                    "Borehole Water Nearby",
+                    "Residential Neighborhood"
+                  ].map((feature) => {
+                    const isSelected = landFeatures.includes(feature);
+                    return (
+                      <label key={feature} className="flex items-center gap-2 cursor-pointer p-1.5 rounded-lg hover:bg-emerald-100/50 dark:hover:bg-slate-700/50 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => {
+                            if (isSelected) {
+                              setLandFeatures((prev) => prev.filter((a) => a !== feature));
+                            } else {
+                              setLandFeatures((prev) => [...prev, feature]);
+                            }
+                          }}
+                          className="rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 w-4 h-4"
+                        />
+                        <span className="text-slate-700 dark:text-slate-200 font-medium">{feature}</span>
+                      </label>
+                    );
+                  })}
+                </div>
               </div>
 
               <ImageUploader

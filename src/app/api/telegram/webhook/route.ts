@@ -1,9 +1,130 @@
 import { NextRequest, NextResponse } from "next/server";
-import { sendTelegramMessage, getTelegramFileUrl } from "@/lib/telegram";
+import { sendTelegramMessage, editTelegramMessage, getTelegramFileUrl } from "@/lib/telegram";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slug";
 
-// In-memory conversation state for active Telegram listing wizards
+// ============================================================================
+// CATEGORY-SPECIFIC AMENITIES / FEATURES LISTS
+// ============================================================================
+const APARTMENT_AMENITIES = [
+  "24/7 Industrial Borehole Water",
+  "Prepaid Electricity Meter (PHCN)",
+  "24/7 Gated Security Guard",
+  "Solar Power & Inverter Backup",
+  "Standby Generator Backup",
+  "PVC Ceiling",
+  "Tiled Flooring & POP Ceilings",
+  "Fenced Compound & Security Gate",
+  "Reading Study Desk & Chair",
+  "Daily Waste Management",
+  "Ample Car & Bike Parking",
+  "Kitchenette with Sink & Cabinets",
+  "En-Suite Bathroom & Water Heater",
+  "Burglar Proofed Windows",
+  "Close to Campus Shuttle Bus Stop",
+];
+
+const HOTEL_AMENITIES = [
+  "24/7 Air Conditioning",
+  "Free High-Speed Fiber Wi-Fi",
+  "Swimming Pool & Pool Bar",
+  "Complimentary Hot Breakfast",
+  "Fitness Gym Center",
+  "24/7 Standby Generator Backup",
+  "Solar Power Backup",
+  "Smart TV with Premium DSTV",
+  "Cocktail Lounge & Restaurant",
+  "24/7 Gated Security Guard",
+  "Free Ample Parking",
+  "Airport / Campus Shuttle Service",
+  "24-Hour Room Service",
+];
+
+const CAR_FEATURES = [
+  "Leather Interior",
+  "Sunroof / Panoramic Roof",
+  "Reverse Camera / Parking Sensors",
+  "Cruise Control",
+  "Bluetooth / Apple CarPlay / Android Auto",
+  "Navigation System / GPS",
+  "Keyless Entry & Push Start",
+  "Alloy Wheels",
+  "LED / Xenon Headlights",
+  "Air Conditioning (Dual Zone)",
+  "Tinted Windows",
+  "Dashcam / Security Tracker",
+  "Full Service History / Duty Paid",
+  "Low Mileage / Clean Title",
+];
+
+const LAND_FEATURES = [
+  "Tarred Access Road",
+  "Perimeter Fencing",
+  "Electricity Nearby (PHCN Pole)",
+  "Gated Estate / Security",
+  "Commercial Area Frontage",
+  "Close to University / School",
+  "Survey Plan Available",
+  "Drainage / Good Terrain",
+  "Borehole Water Nearby",
+  "Residential Neighborhood",
+];
+
+/** Returns the correct amenities/features list for a given category */
+function getAmenitiesForCategory(category: string): string[] {
+  switch (category) {
+    case "apartment": return APARTMENT_AMENITIES;
+    case "hotel": return HOTEL_AMENITIES;
+    case "car": return CAR_FEATURES;
+    case "land": return LAND_FEATURES;
+    default: return APARTMENT_AMENITIES;
+  }
+}
+
+/** Returns the category label for amenities display */
+function getCategoryLabel(category: string): string {
+  switch (category) {
+    case "apartment": return "🏢 Apartment Amenities";
+    case "hotel": return "🏨 Hotel Amenities";
+    case "car": return "🚗 Car Features";
+    case "land": return "📐 Land Features";
+    default: return "✨ Amenities";
+  }
+}
+
+/** Builds the inline keyboard for amenity toggle buttons */
+function buildAmenitiesKeyboard(category: string, selectedIndexes: Set<number>) {
+  const amenities = getAmenitiesForCategory(category);
+  const rows: { text: string; callback_data: string }[][] = [];
+
+  for (let i = 0; i < amenities.length; i += 2) {
+    const row: { text: string; callback_data: string }[] = [];
+    // First item in row
+    const sel1 = selectedIndexes.has(i);
+    row.push({
+      text: `${sel1 ? "✅" : "⬜"} ${amenities[i]}`,
+      callback_data: `amen_${i}`,
+    });
+    // Second item in row (if exists)
+    if (i + 1 < amenities.length) {
+      const sel2 = selectedIndexes.has(i + 1);
+      row.push({
+        text: `${sel2 ? "✅" : "⬜"} ${amenities[i + 1]}`,
+        callback_data: `amen_${i + 1}`,
+      });
+    }
+    rows.push(row);
+  }
+
+  // Add "Done" button at the bottom
+  rows.push([{ text: "✅ Done — Continue to Photos", callback_data: "amen_done" }]);
+
+  return { inline_keyboard: rows };
+}
+
+// ============================================================================
+// IN-MEMORY CONVERSATION STATE
+// ============================================================================
 interface AgentWizardSession {
   step:
     | "IDLE"
@@ -14,6 +135,7 @@ interface AgentWizardSession {
     | "LOCATION"
     | "NEIGHBORHOOD"
     | "DESCRIPTION"
+    | "AMENITIES"
     | "MEDIA";
   agentId?: string;
   agentName?: string;
@@ -25,6 +147,9 @@ interface AgentWizardSession {
   neighborhood?: string;
   description?: string;
   images: string[];
+  amenities: string[];
+  selectedAmenityIndexes: Set<number>;
+  amenitiesMessageId?: number;
   youtubeVideoId?: string;
   youtubeUrl?: string;
   youtubeThumbnail?: string;
@@ -40,15 +165,28 @@ if (!sessionsStore.telegramSessions) {
 
 const getSession = (chatId: string): AgentWizardSession => {
   if (!sessionsStore.telegramSessions.has(chatId)) {
-    sessionsStore.telegramSessions.set(chatId, { step: "IDLE", images: [] });
+    sessionsStore.telegramSessions.set(chatId, {
+      step: "IDLE",
+      images: [],
+      amenities: [],
+      selectedAmenityIndexes: new Set(),
+    });
   }
   return sessionsStore.telegramSessions.get(chatId)!;
 };
 
 const resetSession = (chatId: string) => {
-  sessionsStore.telegramSessions.set(chatId, { step: "IDLE", images: [] });
+  sessionsStore.telegramSessions.set(chatId, {
+    step: "IDLE",
+    images: [],
+    amenities: [],
+    selectedAmenityIndexes: new Set(),
+  });
 };
 
+// ============================================================================
+// WEBHOOK HANDLER
+// ============================================================================
 export async function POST(req: NextRequest) {
   try {
     const update = await req.json();
@@ -57,9 +195,11 @@ export async function POST(req: NextRequest) {
     if (update.callback_query) {
       const callback = update.callback_query;
       const chatId = String(callback.message.chat.id);
+      const messageId = callback.message.message_id;
       const data = callback.data;
       const session = getSession(chatId);
 
+      // CATEGORY SELECTION
       if (data.startsWith("cat_")) {
         const cat = data.replace("cat_", "") as "apartment" | "hotel" | "car" | "land";
         session.category = cat;
@@ -68,7 +208,66 @@ export async function POST(req: NextRequest) {
           chatId,
           `Selected Category: <b>${cat.toUpperCase()}</b>\n\nWhat is the <b>title</b> of the listing?\n<i>(e.g., Ehis Executive Lodge & Student Apartments)</i>`
         );
-      } else if (data === "publish_now") {
+      }
+
+      // AMENITY TOGGLE (tap to select/deselect)
+      else if (data.startsWith("amen_") && data !== "amen_done" && session.step === "AMENITIES") {
+        const index = parseInt(data.replace("amen_", ""));
+        if (!isNaN(index)) {
+          if (session.selectedAmenityIndexes.has(index)) {
+            session.selectedAmenityIndexes.delete(index);
+          } else {
+            session.selectedAmenityIndexes.add(index);
+          }
+
+          // Re-render the keyboard with updated toggle states
+          const category = session.category || "apartment";
+          const amenitiesList = getAmenitiesForCategory(category);
+          const selectedCount = session.selectedAmenityIndexes.size;
+          const label = getCategoryLabel(category);
+
+          await editTelegramMessage(
+            chatId,
+            messageId,
+            `${label}\n\nTap to select/deselect. <b>${selectedCount}</b> selected.\nTap <b>"Done"</b> when finished:`,
+            {
+              reply_markup: buildAmenitiesKeyboard(category, session.selectedAmenityIndexes),
+            }
+          );
+        }
+      }
+
+      // AMENITY DONE — resolve selected amenities and proceed to MEDIA
+      else if (data === "amen_done" && session.step === "AMENITIES") {
+        const category = session.category || "apartment";
+        const amenitiesList = getAmenitiesForCategory(category);
+
+        // Convert selected indexes to amenity strings
+        session.amenities = Array.from(session.selectedAmenityIndexes)
+          .sort((a, b) => a - b)
+          .map((i) => amenitiesList[i])
+          .filter(Boolean);
+
+        session.step = "MEDIA";
+
+        const selectedSummary =
+          session.amenities.length > 0
+            ? session.amenities.map((a) => `• ${a}`).join("\n")
+            : "<i>None selected</i>";
+
+        await sendTelegramMessage(
+          chatId,
+          `✅ <b>Amenities saved!</b> (${session.amenities.length} selected)\n${selectedSummary}\n\n📷 <b>Now send photos or a video tour!</b>\nSimply send photos/videos as media attachments in this chat.\n\nWhen ready, tap the button below to publish:`,
+          {
+            reply_markup: {
+              inline_keyboard: [[{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }]],
+            },
+          }
+        );
+      }
+
+      // PUBLISH
+      else if (data === "publish_now") {
         await finalizeAndPublishListing(chatId, session);
       }
 
@@ -196,6 +395,8 @@ export async function POST(req: NextRequest) {
 
       session.step = "SELECT_CATEGORY";
       session.images = [];
+      session.amenities = [];
+      session.selectedAmenityIndexes = new Set();
 
       await sendTelegramMessage(chatId, "Select the listing category you want to publish:", {
         reply_markup: {
@@ -252,18 +453,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 8. STEP: DESCRIPTION
+    // 8. STEP: DESCRIPTION → now goes to AMENITIES instead of MEDIA
     if (session.step === "DESCRIPTION") {
       session.description = text;
-      session.step = "MEDIA";
+      session.step = "AMENITIES";
+      session.selectedAmenityIndexes = new Set();
+
+      const category = session.category || "apartment";
+      const label = getCategoryLabel(category);
 
       await sendTelegramMessage(
         chatId,
-        `Description saved!\n\n📷 <b>Now send photos or a video tour!</b>\nSimply send photos/videos as media attachments in this chat.\n\nWhen ready, tap the button below to publish:`,
+        `Description saved!\n\n${label}\n\nTap to select/deselect. <b>0</b> selected.\nTap <b>"Done"</b> when finished:`,
         {
-          reply_markup: {
-            inline_keyboard: [[{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }]],
-          },
+          reply_markup: buildAmenitiesKeyboard(category, new Set()),
         }
       );
       return NextResponse.json({ ok: true });
@@ -305,6 +508,9 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// ============================================================================
+// FINALIZE & PUBLISH LISTING TO SUPABASE
+// ============================================================================
 async function finalizeAndPublishListing(chatId: string, session: AgentWizardSession) {
   if (!session.title || !session.price || !session.location) {
     await sendTelegramMessage(chatId, "⚠️ Missing details. Please run /newlisting to start again.");
@@ -335,26 +541,36 @@ async function finalizeAndPublishListing(chatId: string, session: AgentWizardSes
     payload.bedrooms = 1;
     payload.bathrooms = 1;
     payload.guests = 2;
+    payload.amenities = session.amenities || [];
     if (supabase) await supabase.from("properties").insert(payload);
   } else if (category === "hotel") {
     payload.price_per_night = session.price;
+    payload.amenities = session.amenities || [];
     if (supabase) await supabase.from("hotels").insert(payload);
   } else if (category === "car") {
     payload.price = session.price;
     payload.make = "Toyota";
     payload.model = "Camry";
     payload.listing_type = "rent";
+    payload.features = session.amenities || [];
     if (supabase) await supabase.from("cars").insert(payload);
   } else if (category === "land") {
     payload.price = session.price;
     payload.size = "1 Plot (600 sqm)";
+    payload.features = session.amenities || [];
     if (supabase) await supabase.from("lands").insert(payload);
   }
+
+  // Build amenities summary for the success message
+  const amenitiesSummary =
+    session.amenities && session.amenities.length > 0
+      ? `\n✨ <b>Amenities:</b> ${session.amenities.join(", ")}`
+      : "";
 
   resetSession(chatId);
 
   await sendTelegramMessage(
     chatId,
-    `🎉 <b>LISTING PUBLISHED SUCCESSFULLY!</b>\n\n🏢 <b>Title:</b> ${session.title}\n💰 <b>Price:</b> ₦${session.price.toLocaleString()}\n📍 <b>Location:</b> ${session.location}\n\n🔗 <b>Live Link:</b>\n${publicUrl}`
+    `🎉 <b>LISTING PUBLISHED SUCCESSFULLY!</b>\n\n🏢 <b>Title:</b> ${session.title}\n💰 <b>Price:</b> ₦${session.price.toLocaleString()}\n📍 <b>Location:</b> ${session.location}${amenitiesSummary}\n\n🔗 <b>Live Link:</b>\n${publicUrl}`
   );
 }
