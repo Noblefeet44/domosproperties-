@@ -484,15 +484,7 @@ export async function POST(req: NextRequest) {
 
         await sendTelegramMessage(
           chatId,
-          `✅ <b>Amenities saved!</b> (${session.amenities.length} selected)\n${selectedSummary}\n\n📷 <b>Now send photos or a video tour!</b>\nYou can send photo attachments, video files (MP4/MOV), or paste a YouTube video link.\n\nWhen ready, tap the button below to publish:`,
-          {
-            reply_markup: {
-              inline_keyboard: [
-                [{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }],
-                [{ text: "❌ Cancel", callback_data: "cancel_wizard" }],
-              ],
-            },
-          }
+          `✅ <b>Amenities saved!</b> (${session.amenities.length} selected)\n${selectedSummary}\n\n📷 <b>Now send photos or a video tour!</b>\nYou can send photo attachments, video files (MP4/MOV), or paste a YouTube video link.`
         );
       }
 
@@ -943,18 +935,26 @@ export async function POST(req: NextRequest) {
       }
 
       // Step enforcement fallback for text messages sent during MEDIA step
-      await sendTelegramMessage(
-        chatId,
-        `📷 Send photos or video attachments for your listing, or tap <b>"Publish Listing Now"</b> below:`,
-        {
-          reply_markup: {
-            inline_keyboard: [
-              [{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }],
-              [{ text: "❌ Cancel", callback_data: "cancel_wizard" }],
-            ],
-          },
-        }
-      );
+      const hasMediaUploaded = session.images.length > 0 || Boolean(session.youtubeUrl);
+      if (hasMediaUploaded) {
+        await sendTelegramMessage(
+          chatId,
+          `📷 (${session.images.length} item(s) attached). Send more photos/videos or tap <b>"Publish Listing Now"</b> below:`,
+          {
+            reply_markup: {
+              inline_keyboard: [
+                [{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }],
+                [{ text: "❌ Cancel", callback_data: "cancel_wizard" }],
+              ],
+            },
+          }
+        );
+      } else {
+        await sendTelegramMessage(
+          chatId,
+          `📷 <b>Please attach photos or a video file for your listing</b> (or paste a YouTube video link):`
+        );
+      }
       return NextResponse.json({ ok: true });
     }
 

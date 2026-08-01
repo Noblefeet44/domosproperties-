@@ -4,7 +4,7 @@ import { Navbar } from "../../components/Navbar";
 import YouTubePlayer from "../../components/YouTubePlayer";
 import { getAllProperties, getPropertyBySlugOrId } from "@/lib/properties";
 import { getPropertySlug } from "@/lib/slug";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -234,15 +234,25 @@ export default async function PropertyDetailPage({ params }: PageProps) {
         {/* Core Web Vitals Optimized Image Gallery */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8 rounded-2xl overflow-hidden shadow-md">
           <div className="md:col-span-2 h-72 sm:h-96 relative bg-stone-200 dark:bg-zinc-900">
-            <Image
-              src={mainImage}
-              alt={property.title}
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 66vw"
-              className="object-cover"
-              unoptimized={mainImage.includes("img.youtube.com")}
-            />
+            {isDirectVideoUrl(mainImage) ? (
+              <video
+                src={`${mainImage}#t=0.5`}
+                controls
+                playsInline
+                preload="metadata"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <Image
+                src={mainImage}
+                alt={property.title}
+                fill
+                priority
+                sizes="(max-width: 768px) 100vw, 66vw"
+                className="object-cover"
+                unoptimized={mainImage.includes("img.youtube.com") || mainImage.includes("telegram")}
+              />
+            )}
           </div>
           <div className="hidden md:flex flex-col gap-4 h-96">
             {property.images.slice(1, 3).map((img, idx) => (
@@ -382,7 +392,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                         fill
                         sizes="(max-width: 640px) 100vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
-                        unoptimized={simImg.includes("img.youtube.com")}
+                        unoptimized={simImg.includes("img.youtube.com") || simImg.includes("telegram") || simImg.includes("?")}
                       />
                       <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[9px] uppercase font-extrabold px-2.5 py-0.5 rounded-full z-10">
                         {simProp.neighborhood}

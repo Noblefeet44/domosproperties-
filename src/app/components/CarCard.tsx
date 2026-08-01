@@ -3,7 +3,7 @@
 import React from "react";
 import { Car } from "../data/cars";
 import { useApp } from "../context/AppContext";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 interface CarCardProps {
   car: Car;
@@ -12,7 +12,8 @@ interface CarCardProps {
 export const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const { setSelectedCar } = useApp();
 
-  const { imageUrl, hasVideo } = getListingCardMedia(car, "/images/royal_villa.png");
+  const { imageUrl, hasVideo, isVideoFile } = getListingCardMedia(car, "/images/royal_villa.png");
+  const isVid = isVideoFile || isDirectVideoUrl(imageUrl);
   const isRent = car.listingType === "rent";
 
   return (
@@ -22,11 +23,24 @@ export const CarCard: React.FC<CarCardProps> = ({ car }) => {
     >
       {/* Image Header */}
       <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        <img
-          src={imageUrl}
-          alt={car.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        {isVid ? (
+          <video
+            src={`${imageUrl}#t=0.5`}
+            preload="metadata"
+            muted
+            playsInline
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <img
+            src={imageUrl}
+            alt={car.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/images/royal_villa.png";
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
 
         {/* Badges */}

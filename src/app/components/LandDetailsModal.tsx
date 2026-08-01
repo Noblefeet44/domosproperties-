@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { LandProperty } from "../data/lands";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 export const LandDetailsModal: React.FC = () => {
   const { lands, allAgents, selectedLand, setSelectedLand, addBooking } = useApp();
@@ -94,11 +94,24 @@ export const LandDetailsModal: React.FC = () => {
                   />
                 ) : (
                   <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-                    <img
-                      src={displayImg || imageUrl}
-                      alt={selectedLand.title}
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
+                    {isDirectVideoUrl(displayImg || imageUrl) ? (
+                      <video
+                        src={`${displayImg || imageUrl}#t=0.5`}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={displayImg || imageUrl}
+                        alt={selectedLand.title}
+                        className="w-full h-full object-cover transition-all duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/treasure_hostel.png";
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </div>

@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Property } from "../data/properties";
 import { useApp } from "../context/AppContext";
 import { getPropertySlug } from "@/lib/slug";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 interface PropertyCardProps {
   property: Property;
@@ -16,21 +16,32 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const { setSelectedProperty } = useApp();
 
   const slug = getPropertySlug(property);
-  const { imageUrl, hasVideo } = getListingCardMedia(property, "/images/ehis_hostel.png");
+  const { imageUrl, hasVideo, isVideoFile } = getListingCardMedia(property, "/images/ehis_hostel.png");
+  const isVid = isVideoFile || isDirectVideoUrl(imageUrl);
 
   return (
     <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 transition-all hover:shadow-lg">
-      {/* Property Image Container with next/image */}
+      {/* Property Image Container with next/image or video preview */}
       <Link href={`/properties/${slug}`} className="relative h-60 w-full overflow-hidden block bg-slate-200 dark:bg-slate-800">
-        <Image
-          src={imageUrl}
-          alt={property.title}
-          fill
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          loading="lazy"
-          unoptimized={imageUrl.includes("img.youtube.com")}
-        />
+        {isVid ? (
+          <video
+            src={`${imageUrl}#t=0.5`}
+            preload="metadata"
+            muted
+            playsInline
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+          />
+        ) : (
+          <Image
+            src={imageUrl}
+            alt={property.title}
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover transition-transform duration-500 group-hover:scale-105"
+            loading="lazy"
+            unoptimized={imageUrl.includes("img.youtube.com") || imageUrl.includes("telegram")}
+          />
+        )}
 
         {/* Featured Badge */}
         {property.featured && (

@@ -3,6 +3,22 @@
  */
 
 /**
+ * Checks if a URL points to a direct video file (e.g. MP4, MOV, WebM) or Telegram video stream.
+ */
+export function isDirectVideoUrl(url?: string | null): boolean {
+  if (!url) return false;
+  const lower = url.toLowerCase();
+  return (
+    lower.endsWith(".mp4") ||
+    lower.endsWith(".mov") ||
+    lower.endsWith(".webm") ||
+    lower.endsWith(".m4v") ||
+    lower.includes("/video") ||
+    (lower.includes("api.telegram.org") && (lower.includes(".mp4") || lower.includes("file_") || lower.includes("video")))
+  );
+}
+
+/**
  * Extracts YouTube Video ID from various URL formats or raw ID string.
  * Supports:
  * - https://www.youtube.com/watch?v=VIDEO_ID
@@ -41,7 +57,7 @@ export function extractYouTubeVideoId(input?: string): string | null {
  * Returns a high quality thumbnail URL for a given YouTube Video ID or URL.
  */
 export function getYouTubeThumbnailUrl(videoIdOrUrl?: string, customThumbnailUrl?: string): string | null {
-  if (customThumbnailUrl && customThumbnailUrl.trim().length > 0) {
+  if (customThumbnailUrl && customThumbnailUrl.trim().length > 0 && !isDirectVideoUrl(customThumbnailUrl)) {
     return customThumbnailUrl.trim();
   }
 
@@ -69,9 +85,10 @@ interface ListingMediaItem {
   youtubeThumbnail?: string;
 }
 
-interface CardMediaResult {
+export interface CardMediaResult {
   imageUrl: string;
   hasVideo: boolean;
+  isVideoFile: boolean;
   videoId: string | null;
   youtubeUrl: string | null;
   isYouTubeThumbnail: boolean;
@@ -80,7 +97,7 @@ interface CardMediaResult {
 /**
  * Determines the primary image to display on a listing card.
  * If a YouTube video or uploaded Telegram video exists and the item has no custom photos (or only default placeholders),
- * it uses the video's thumbnail image with a video badge/play overlay.
+ * it uses the video's thumbnail image or video stream with a video badge/play overlay.
  */
 export function getListingCardMedia(
   item: ListingMediaItem,
@@ -88,23 +105,43 @@ export function getListingCardMedia(
 ): CardMediaResult {
   const videoId =
     extractYouTubeVideoId(item.youtubeVideoId) || extractYouTubeVideoId(item.youtubeUrl);
-  const hasVideo = Boolean(videoId || item.youtubeUrl || item.youtubeThumbnail);
+  const directVidUrl = isDirectVideoUrl(item.youtubeUrl)
+    ? item.youtubeUrl
+    : isDirectVideoUrl(item.images?.[0])
+    ? item.images?.[0]
+    : null;
+  const hasVideo = Boolean(videoId || item.youtubeUrl || item.youtubeThumbnail || directVidUrl);
 
   const videoThumbnail = getYouTubeThumbnailUrl(videoId || item.youtubeUrl, item.youtubeThumbnail);
 
   const images = item.images && item.images.length > 0 ? item.images : [];
   const firstImage = images[0] || "";
   const isFirstImagePlaceholder = !firstImage || DEFAULT_FALLBACK_IMAGES.has(firstImage);
+  const isFirstImageVideo = isDirectVideoUrl(firstImage);
 
-  // If there's a video available, and either no custom images or first image is default fallback,
-  // use video thumbnail or first image if available
-  if (hasVideo && (videoThumbnail || firstImage) && (images.length === 0 || isFirstImagePlaceholder)) {
+  // If first image is a direct video file
+  if (isFirstImageVideo) {
     return {
-      imageUrl: videoThumbnail || firstImage || defaultFallbackImage,
+      imageUrl: firstImage,
       hasVideo: true,
+      isVideoFile: true,
+      videoId: null,
+      youtubeUrl: item.youtubeUrl || firstImage,
+      isYouTubeThumbnail: false,
+    };
+  }
+
+  // If there's a video available, and either no custom images or first image is default fallback
+  if (hasVideo && (videoThumbnail || directVidUrl || firstImage) && (images.length === 0 || isFirstImagePlaceholder)) {
+    const finalMediaUrl = videoThumbnail || directVidUrl || firstImage || defaultFallbackImage;
+    const isVid = isDirectVideoUrl(finalMediaUrl);
+    return {
+      imageUrl: finalMediaUrl,
+      hasVideo: true,
+      isVideoFile: isVid,
       videoId,
       youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
-      isYouTubeThumbnail: Boolean(videoThumbnail),
+      isYouTubeThumbnail: Boolean(videoThumbnail && finalMediaUrl === videoThumbnail),
     };
   }
 
@@ -113,20 +150,23 @@ export function getListingCardMedia(
     return {
       imageUrl: firstImage,
       hasVideo,
+      isVideoFile: isDirectVideoUrl(firstImage),
       videoId,
       youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
       isYouTubeThumbnail: false,
     };
   }
 
-  // Fallback to video thumbnail if available, else default fallback image
-  const finalImageUrl = videoThumbnail || firstImage || defaultFallbackImage;
+  // Fallback to video thumbnail or direct video url if available, else default fallback image
+  const finalImageUrl = videoThumbnail || directVidUrl || firstImage || defaultFallbackImage;
 
   return {
     imageUrl: finalImageUrl,
     hasVideo,
+    isVideoFile: isDirectVideoUrl(finalImageUrl),
     videoId,
     youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
     isYouTubeThumbnail: Boolean(videoThumbnail && finalImageUrl === videoThumbnail),
   };
 }
+

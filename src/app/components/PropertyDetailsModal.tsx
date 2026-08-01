@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 export const PropertyDetailsModal: React.FC = () => {
   const { properties, allAgents, selectedProperty, setSelectedProperty, addBooking } = useApp();
@@ -170,11 +170,24 @@ export const PropertyDetailsModal: React.FC = () => {
                   />
                 ) : (
                   <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-                    <img
-                      src={selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}
-                      alt={selectedProperty.title}
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
+                    {isDirectVideoUrl(selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl) ? (
+                      <video
+                        src={`${selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}#t=0.5`}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}
+                        alt={selectedProperty.title}
+                        className="w-full h-full object-cover transition-all duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/ehis_hostel.png";
+                        }}
+                      />
+                    )}
                   </div>
                 )}
                 {hasCustomPhotos && selectedProperty.images.length > 1 && (

@@ -3,7 +3,7 @@
 import React from "react";
 import { LandProperty } from "../data/lands";
 import { useApp } from "../context/AppContext";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 interface LandCardProps {
   land: LandProperty;
@@ -12,7 +12,8 @@ interface LandCardProps {
 export const LandCard: React.FC<LandCardProps> = ({ land }) => {
   const { setSelectedLand } = useApp();
 
-  const { imageUrl, hasVideo } = getListingCardMedia(land, "/images/treasure_hostel.png");
+  const { imageUrl, hasVideo, isVideoFile } = getListingCardMedia(land, "/images/treasure_hostel.png");
+  const isVid = isVideoFile || isDirectVideoUrl(imageUrl);
 
   return (
     <div
@@ -21,11 +22,24 @@ export const LandCard: React.FC<LandCardProps> = ({ land }) => {
     >
       {/* Image Header */}
       <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        <img
-          src={imageUrl}
-          alt={land.title}
-          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-        />
+        {isVid ? (
+          <video
+            src={`${imageUrl}#t=0.5`}
+            preload="metadata"
+            muted
+            playsInline
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
+        ) : (
+          <img
+            src={imageUrl}
+            alt={land.title}
+            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = "/images/treasure_hostel.png";
+            }}
+          />
+        )}
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
 
         {/* Badges */}

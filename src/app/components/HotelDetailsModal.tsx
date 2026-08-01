@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Hotel } from "../data/hotels";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
 
 export const HotelDetailsModal: React.FC = () => {
   const { hotels, allAgents, selectedHotel, setSelectedHotel, addBooking } = useApp();
@@ -144,11 +144,24 @@ export const HotelDetailsModal: React.FC = () => {
                   />
                 ) : (
                   <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-                    <img
-                      src={displayImg || imageUrl}
-                      alt={selectedHotel.title}
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
+                    {isDirectVideoUrl(displayImg || imageUrl) ? (
+                      <video
+                        src={`${displayImg || imageUrl}#t=0.5`}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <img
+                        src={displayImg || imageUrl}
+                        alt={selectedHotel.title}
+                        className="w-full h-full object-cover transition-all duration-300"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/ehis_hostel.png";
+                        }}
+                      />
+                    )}
                   </div>
                 )}
               </div>
