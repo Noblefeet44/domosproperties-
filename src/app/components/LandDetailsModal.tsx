@@ -228,18 +228,24 @@ export const LandDetailsModal: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {similarLands.map((simLand) => {
                   const simAgent = allAgents.find((a) => a.id === simLand.agentId) || allAgents[0];
+                  const { imageUrl: simImgUrl, hasVideo: simHasVideo } = getListingCardMedia(simLand, "/images/treasure_hostel.png");
                   return (
                     <div
                       key={simLand.id}
                       onClick={() => setSelectedLand(simLand)}
                       className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
                     >
-                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 relative">
                         <img
-                          src={simLand.images[0] || "/images/treasure_hostel.png"}
+                          src={simImgUrl}
                           alt={simLand.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
+                        {simHasVideo && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow flex items-center gap-0.5 border border-rose-400/40">
+                            <span>▶</span> Video
+                          </span>
+                        )}
                       </div>
                       <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
                         {simLand.title}

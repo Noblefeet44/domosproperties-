@@ -337,18 +337,24 @@ export const HotelDetailsModal: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {similarHotels.map((simHotel) => {
                   const simAgent = allAgents.find((a) => a.id === simHotel.agentId) || allAgents[0];
+                  const { imageUrl: simImgUrl, hasVideo: simHasVideo } = getListingCardMedia(simHotel, "/images/ehis_hostel.png");
                   return (
                     <div
                       key={simHotel.id}
                       onClick={() => setSelectedHotel(simHotel)}
                       className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 hover:border-amber-500 cursor-pointer transition-all space-y-2 group"
                     >
-                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700">
+                      <div className="h-28 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 relative">
                         <img
-                          src={simHotel.images[0] || "/images/ehis_hostel.png"}
+                          src={simImgUrl}
                           alt={simHotel.title}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                         />
+                        {simHasVideo && (
+                          <span className="absolute top-1.5 right-1.5 px-1.5 py-0.5 rounded-md bg-rose-600 text-white text-[9px] font-black uppercase tracking-wider shadow flex items-center gap-0.5 border border-rose-400/40">
+                            <span>▶</span> Video
+                          </span>
+                        )}
                       </div>
                       <h4 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">
                         {simHotel.title}

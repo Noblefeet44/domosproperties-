@@ -367,7 +367,7 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
               {similarProperties.map((simProp) => {
                 const simSlug = getPropertySlug(simProp);
-                const simImg = simProp.images && simProp.images.length > 0 ? simProp.images[0] : "/images/ehis_hostel.png";
+                const { imageUrl: simImg, hasVideo: simHasVideo } = getListingCardMedia(simProp, "/images/ehis_hostel.png");
 
                 return (
                   <a
@@ -382,10 +382,16 @@ export default async function PropertyDetailPage({ params }: PageProps) {
                         fill
                         sizes="(max-width: 640px) 100vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        unoptimized={simImg.includes("img.youtube.com")}
                       />
                       <span className="absolute top-2.5 left-2.5 bg-black/60 backdrop-blur-xs text-white text-[9px] uppercase font-extrabold px-2.5 py-0.5 rounded-full z-10">
                         {simProp.neighborhood}
                       </span>
+                      {simHasVideo && (
+                        <span className="absolute top-2.5 right-2.5 bg-rose-600/90 text-white text-[9px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full z-10 flex items-center gap-0.5 shadow">
+                          <span>▶</span> Video
+                        </span>
+                      )}
                     </div>
                     <div className="p-4 flex flex-col flex-1">
                       <h3 className="text-sm font-bold truncate mb-1">{simProp.title}</h3>
