@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendTelegramMessage, editTelegramMessage, getTelegramFileUrl } from "@/lib/telegram";
 import { createClient } from "@/lib/supabase/server";
 import { slugify } from "@/lib/slug";
+import { extractYouTubeVideoId, getYouTubeThumbnailUrl } from "@/lib/youtube";
 
 // ============================================================================
 // CATEGORY-SPECIFIC AMENITIES / FEATURES LISTS
@@ -472,8 +473,32 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
-    // 9. MEDIA HANDLING (Photos & Videos sent during MEDIA step)
+    // 9. MEDIA HANDLING (Photos, Videos & YouTube Links sent during MEDIA step)
     if (session.step === "MEDIA") {
+      // Check if text message is a YouTube URL or contains a YouTube link
+      const ytVideoId = extractYouTubeVideoId(text);
+      if (ytVideoId) {
+        const ytThumbnail = getYouTubeThumbnailUrl(ytVideoId);
+        session.youtubeVideoId = ytVideoId;
+        session.youtubeUrl = text.startsWith("http") ? text : `https://www.youtube.com/watch?v=${ytVideoId}`;
+        session.youtubeThumbnail = ytThumbnail || undefined;
+
+        if (ytThumbnail) {
+          session.images.push(ytThumbnail);
+        }
+
+        await sendTelegramMessage(
+          chatId,
+          `🎬 <b>YouTube Video Attached!</b>\nVideo ID: <code>${ytVideoId}</code>\n\nThumbnail generated automatically! Send photos or tap [ 🚀 Publish Listing Now ].`,
+          {
+            reply_markup: {
+              inline_keyboard: [[{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }]],
+            },
+          }
+        );
+        return NextResponse.json({ ok: true });
+      }
+
       if (message.photo) {
         // Highest resolution photo is last element in array
         const photoArr = message.photo;
@@ -484,7 +509,7 @@ export async function POST(req: NextRequest) {
           session.images.push(fileUrl);
           await sendTelegramMessage(
             chatId,
-            `✅ Photo attached! (${session.images.length} photo(s) total).\nSend more photos or tap [ Publish Listing Now ].`,
+            `✅ Photo attached! (${session.images.length} item(s) total).\nSend more photos, paste a YouTube link, or tap [ Publish Listing Now ].`,
             {
               reply_markup: {
                 inline_keyboard: [[{ text: "🚀 Publish Listing Now", callback_data: "publish_now" }]],
@@ -520,7 +545,16 @@ async function finalizeAndPublishListing(chatId: string, session: AgentWizardSes
   const supabase = await createClient();
   const category = session.category || "apartment";
   const id = `${category.slice(0, 4)}-` + Math.random().toString(36).substring(2, 9);
-  const images = session.images.length > 0 ? session.images : ["/images/ehis_hostel.png"];
+  
+  // If YouTube thumbnail exists and no images were attached, use YouTube thumbnail as the main image
+  let images = session.images.length > 0 ? session.images : [];
+  if (images.length === 0 && session.youtubeThumbnail) {
+    images = [session.youtubeThumbnail];
+  }
+  if (images.length === 0) {
+    images = ["/images/ehis_hostel.png"];
+  }
+
   const cleanSlug = slugify(session.title);
 
   const payload: Record<string, any> = {
@@ -532,6 +566,9 @@ async function finalizeAndPublishListing(chatId: string, session: AgentWizardSes
     images,
     agent_id: session.agentId,
     agent_phone: session.agentPhone || "07073537007",
+    youtube_video_id: session.youtubeVideoId || null,
+    youtube_url: session.youtubeUrl || null,
+    youtube_thumbnail: session.youtubeThumbnail || null,
   };
 
   let publicUrl = `https://domosproperty.org/properties/${cleanSlug}`;
@@ -567,10 +604,12 @@ async function finalizeAndPublishListing(chatId: string, session: AgentWizardSes
       ? `\n✨ <b>Amenities:</b> ${session.amenities.join(", ")}`
       : "";
 
+  const videoSummary = session.youtubeVideoId ? `\n🎬 <b>Video Tour:</b> Attached` : "";
+
   resetSession(chatId);
 
   await sendTelegramMessage(
     chatId,
-    `🎉 <b>LISTING PUBLISHED SUCCESSFULLY!</b>\n\n🏢 <b>Title:</b> ${session.title}\n💰 <b>Price:</b> ₦${session.price.toLocaleString()}\n📍 <b>Location:</b> ${session.location}${amenitiesSummary}\n\n🔗 <b>Live Link:</b>\n${publicUrl}`
+    `🎉 <b>LISTING PUBLISHED SUCCESSFULLY!</b>\n\n🏢 <b>Title:</b> ${session.title}\n💰 <b>Price:</b> ₦${session.price.toLocaleString()}\n📍 <b>Location:</b> ${session.location}${amenitiesSummary}${videoSummary}\n\n🔗 <b>Live Link:</b>\n${publicUrl}`
   );
 }

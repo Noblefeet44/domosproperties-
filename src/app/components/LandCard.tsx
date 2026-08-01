@@ -3,6 +3,7 @@
 import React from "react";
 import { LandProperty } from "../data/lands";
 import { useApp } from "../context/AppContext";
+import { getListingCardMedia } from "@/lib/youtube";
 
 interface LandCardProps {
   land: LandProperty;
@@ -11,53 +12,49 @@ interface LandCardProps {
 export const LandCard: React.FC<LandCardProps> = ({ land }) => {
   const { setSelectedLand } = useApp();
 
-  const hasRealImages = land.images && land.images.length > 0 && !land.images[0]?.startsWith("/images/");
-  const hasYouTube = !!(land.youtubeVideoId || land.youtubeUrl);
-  const showVideoCard = !hasRealImages && hasYouTube;
-  const primaryImage = hasRealImages ? land.images[0] : "/images/treasure_hostel.png";
-
-  // Extract YouTube video ID
-  let ytVideoId = land.youtubeVideoId;
-  if (!ytVideoId && land.youtubeUrl) {
-    const match = land.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
-    if (match) ytVideoId = match[1];
-  }
+  const { imageUrl, hasVideo } = getListingCardMedia(land, "/images/treasure_hostel.png");
 
   return (
     <div
       onClick={() => setSelectedLand(land)}
       className="group relative bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-200/80 dark:border-slate-800 shadow-sm hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1.5 cursor-pointer flex flex-col h-full"
     >
-      {/* Image / YouTube Video Header */}
+      {/* Image Header */}
       <div className="relative h-60 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
-        {showVideoCard && ytVideoId ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${ytVideoId}?rel=0&modestbranding=1`}
-            title={land.title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <>
-            <img
-              src={primaryImage}
-              alt={land.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
-          </>
-        )}
+        <img
+          src={imageUrl}
+          alt={land.title}
+          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-80" />
 
         {/* Badges */}
         <div className="absolute top-3.5 left-3.5 right-3.5 flex items-center justify-between z-10">
           <span className="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-emerald-600 text-white shadow-md">
             📐 Land & Plots
           </span>
-          <span className="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black shadow-md">
-            {land.titleDocument}
-          </span>
+          <div className="flex items-center gap-1.5">
+            {hasVideo && (
+              <span className="px-2.5 py-1 rounded-full bg-rose-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 border border-rose-400/40">
+                <span>▶</span> Video Tour
+              </span>
+            )}
+            <span className="px-2.5 py-1 rounded-full bg-amber-500 text-slate-950 text-[10px] font-black shadow-md">
+              {land.titleDocument}
+            </span>
+          </div>
         </div>
+
+        {/* Play Icon Center Overlay on Hover when video exists */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30 opacity-80 group-hover:opacity-100 transition-opacity z-10">
+            <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform border-2 border-white/80">
+              <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
+        )}
 
         {/* Location overlay bottom left */}
         <div className="absolute bottom-3 left-3.5 right-3.5 text-white z-10">

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Property } from "../data/properties";
 import { useApp } from "../context/AppContext";
 import { getPropertySlug } from "@/lib/slug";
+import { getListingCardMedia } from "@/lib/youtube";
 
 interface PropertyCardProps {
   property: Property;
@@ -15,48 +16,47 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
   const { setSelectedProperty } = useApp();
 
   const slug = getPropertySlug(property);
-  const hasRealImages = property.images && property.images.length > 0 && !property.images[0]?.startsWith("/images/");
-  const hasYouTube = !!(property.youtubeVideoId || property.youtubeUrl);
-  const showVideoCard = !hasRealImages && hasYouTube;
-  const mainImage = hasRealImages ? property.images[0] : "/images/ehis_hostel.png";
-
-  // Extract YouTube video ID from videoId or URL
-  let ytVideoId = property.youtubeVideoId;
-  if (!ytVideoId && property.youtubeUrl) {
-    const match = property.youtubeUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/))([a-zA-Z0-9_-]{11})/);
-    if (match) ytVideoId = match[1];
-  }
+  const { imageUrl, hasVideo } = getListingCardMedia(property, "/images/ehis_hostel.png");
 
   return (
-    <div 
-      className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 transition-all hover:shadow-lg"
-    >
-      {/* Property Image / YouTube Video Container */}
+    <div className="glass-card rounded-2xl overflow-hidden flex flex-col h-full group relative border border-sky-100 dark:border-slate-800 transition-all hover:shadow-lg">
+      {/* Property Image Container with next/image */}
       <Link href={`/properties/${slug}`} className="relative h-60 w-full overflow-hidden block bg-slate-200 dark:bg-slate-800">
-        {showVideoCard && ytVideoId ? (
-          <iframe
-            src={`https://www.youtube.com/embed/${ytVideoId}?rel=0&modestbranding=1`}
-            title={property.title}
-            className="w-full h-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        ) : (
-          <Image
-            src={mainImage}
-            alt={property.title}
-            fill
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            className="object-cover transition-transform duration-500 group-hover:scale-105"
-            loading="lazy"
-          />
-        )}
+        <Image
+          src={imageUrl}
+          alt={property.title}
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover transition-transform duration-500 group-hover:scale-105"
+          loading="lazy"
+          unoptimized={imageUrl.includes("img.youtube.com")}
+        />
 
         {/* Featured Badge */}
         {property.featured && (
           <span className="absolute top-3 left-3 bg-sky-950/80 backdrop-blur-xs text-white text-[10px] uppercase tracking-wider font-extrabold px-2.5 py-1 rounded-full border border-sky-400/40 shadow-md flex items-center gap-1 z-10">
             <span className="w-1.5 h-1.5 rounded-full bg-sky-400 animate-ping"></span> Verified Hostel
           </span>
+        )}
+
+        {/* YouTube / Video Badge Overlay */}
+        {hasVideo && (
+          <div className="absolute top-3 right-3 z-10">
+            <span className="px-2.5 py-1 rounded-full bg-rose-600/90 backdrop-blur-md text-white text-[10px] font-black uppercase tracking-wider shadow-lg flex items-center gap-1 border border-rose-400/40">
+              <span className="text-[12px]">▶</span> Video Tour
+            </span>
+          </div>
+        )}
+
+        {/* Play Icon Center Overlay on Hover */}
+        {hasVideo && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30 opacity-80 group-hover:opacity-100 transition-opacity z-10">
+            <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform border-2 border-white/80">
+              <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          </div>
         )}
       </Link>
 
