@@ -79,8 +79,8 @@ interface CardMediaResult {
 
 /**
  * Determines the primary image to display on a listing card.
- * If a YouTube video exists and the item has no custom photos (or only default placeholders),
- * it uses the YouTube video's thumbnail image with a video badge/play overlay.
+ * If a YouTube video or uploaded Telegram video exists and the item has no custom photos (or only default placeholders),
+ * it uses the video's thumbnail image with a video badge/play overlay.
  */
 export function getListingCardMedia(
   item: ListingMediaItem,
@@ -90,21 +90,21 @@ export function getListingCardMedia(
     extractYouTubeVideoId(item.youtubeVideoId) || extractYouTubeVideoId(item.youtubeUrl);
   const hasVideo = Boolean(videoId || item.youtubeUrl || item.youtubeThumbnail);
 
-  const ytThumbnail = getYouTubeThumbnailUrl(videoId || item.youtubeUrl, item.youtubeThumbnail);
+  const videoThumbnail = getYouTubeThumbnailUrl(videoId || item.youtubeUrl, item.youtubeThumbnail);
 
   const images = item.images && item.images.length > 0 ? item.images : [];
   const firstImage = images[0] || "";
   const isFirstImagePlaceholder = !firstImage || DEFAULT_FALLBACK_IMAGES.has(firstImage);
 
-  // If there's a YouTube video available, and either no custom images or first image is default fallback,
-  // use YouTube thumbnail!
-  if (hasVideo && ytThumbnail && (images.length === 0 || isFirstImagePlaceholder)) {
+  // If there's a video available, and either no custom images or first image is default fallback,
+  // use video thumbnail or first image if available
+  if (hasVideo && (videoThumbnail || firstImage) && (images.length === 0 || isFirstImagePlaceholder)) {
     return {
-      imageUrl: ytThumbnail,
+      imageUrl: videoThumbnail || firstImage || defaultFallbackImage,
       hasVideo: true,
       videoId,
       youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
-      isYouTubeThumbnail: true,
+      isYouTubeThumbnail: Boolean(videoThumbnail),
     };
   }
 
@@ -119,14 +119,14 @@ export function getListingCardMedia(
     };
   }
 
-  // Fallback to YouTube thumbnail if available, else default fallback image
-  const finalImageUrl = ytThumbnail || firstImage || defaultFallbackImage;
+  // Fallback to video thumbnail if available, else default fallback image
+  const finalImageUrl = videoThumbnail || firstImage || defaultFallbackImage;
 
   return {
     imageUrl: finalImageUrl,
     hasVideo,
     videoId,
     youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
-    isYouTubeThumbnail: Boolean(ytThumbnail && finalImageUrl === ytThumbnail),
+    isYouTubeThumbnail: Boolean(videoThumbnail && finalImageUrl === videoThumbnail),
   };
 }

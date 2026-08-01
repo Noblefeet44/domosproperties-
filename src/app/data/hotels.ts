@@ -10,6 +10,11 @@ export interface Hotel {
   title: string;
   description: string;
   pricePerNight: number; // Nightly rate in Naira (₦)
+  cautionFee?: number;
+  reservationFee?: number;
+  agencyFee?: number;
+  inspectionFee?: number;
+  legalFee?: number;
   location: string;
   neighborhood: string;
   starRating: number;

@@ -68,6 +68,11 @@ CREATE TABLE hotels (
     title TEXT NOT NULL,
     description TEXT,
     price_per_night NUMERIC NOT NULL DEFAULT 0,
+    caution_fee NUMERIC DEFAULT 0,
+    reservation_fee NUMERIC DEFAULT 0,
+    agency_fee NUMERIC DEFAULT 0,
+    inspection_fee NUMERIC DEFAULT 0,
+    legal_fee NUMERIC DEFAULT 0,
     location TEXT NOT NULL,
     neighborhood TEXT NOT NULL,
     star_rating NUMERIC(3,2) DEFAULT 4.5,
@@ -95,6 +100,11 @@ CREATE TABLE cars (
     description TEXT,
     listing_type TEXT DEFAULT 'rent' CHECK (listing_type IN ('rent', 'sale', 'buy')),
     price NUMERIC NOT NULL DEFAULT 0,
+    caution_fee NUMERIC DEFAULT 0,
+    reservation_fee NUMERIC DEFAULT 0,
+    agency_fee NUMERIC DEFAULT 0,
+    inspection_fee NUMERIC DEFAULT 0,
+    legal_fee NUMERIC DEFAULT 0,
     make TEXT NOT NULL,
     model TEXT NOT NULL,
     year INT DEFAULT 2024,
@@ -121,6 +131,11 @@ CREATE TABLE lands (
     title TEXT NOT NULL,
     description TEXT,
     price NUMERIC NOT NULL DEFAULT 0,
+    caution_fee NUMERIC DEFAULT 0,
+    reservation_fee NUMERIC DEFAULT 0,
+    agency_fee NUMERIC DEFAULT 0,
+    inspection_fee NUMERIC DEFAULT 0,
+    legal_fee NUMERIC DEFAULT 0,
     size TEXT NOT NULL,
     title_document TEXT DEFAULT 'C of O',
     zoning TEXT DEFAULT 'Residential',
@@ -256,18 +271,37 @@ ON CONFLICT (id) DO NOTHING;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS caution_fee NUMERIC DEFAULT 0;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS reservation_fee NUMERIC DEFAULT 0;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS agency_fee NUMERIC DEFAULT 0;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS inspection_fee NUMERIC DEFAULT 0;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS legal_fee NUMERIC DEFAULT 0;
 
 ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
 ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS caution_fee NUMERIC DEFAULT 0;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS reservation_fee NUMERIC DEFAULT 0;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS agency_fee NUMERIC DEFAULT 0;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS inspection_fee NUMERIC DEFAULT 0;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS legal_fee NUMERIC DEFAULT 0;
 
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS caution_fee NUMERIC DEFAULT 0;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS reservation_fee NUMERIC DEFAULT 0;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS agency_fee NUMERIC DEFAULT 0;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS inspection_fee NUMERIC DEFAULT 0;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS legal_fee NUMERIC DEFAULT 0;
 
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS caution_fee NUMERIC DEFAULT 0;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS reservation_fee NUMERIC DEFAULT 0;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS agency_fee NUMERIC DEFAULT 0;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS inspection_fee NUMERIC DEFAULT 0;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS legal_fee NUMERIC DEFAULT 0;
 
 ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT;
-

@@ -90,6 +90,7 @@ export async function editTelegramMessage(
 
 /**
  * Gets direct download URL for a file sent to the Telegram bot (photos/videos).
+ * Wraps file_path inside CORS-friendly media proxy endpoint for reliable browser playback.
  */
 export async function getTelegramFileUrl(fileId: string): Promise<string | null> {
   const token = process.env.TELEGRAM_BOT_TOKEN;
@@ -100,7 +101,8 @@ export async function getTelegramFileUrl(fileId: string): Promise<string | null>
     const data: TelegramResponse<{ file_path: string }> = await res.json();
 
     if (data.ok && data.result?.file_path) {
-      return `https://api.telegram.org/file/bot${token}/${data.result.file_path}`;
+      const filePath = data.result.file_path;
+      return `/api/telegram/media?file_path=${encodeURIComponent(filePath)}`;
     }
     return null;
   } catch (err) {

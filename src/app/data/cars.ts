@@ -4,6 +4,11 @@ export interface Car {
   description: string;
   listingType: 'rent' | 'sale';
   price: number; // Daily Rate if rent, Total Price if sale (in ₦)
+  cautionFee?: number;
+  reservationFee?: number;
+  agencyFee?: number;
+  inspectionFee?: number;
+  legalFee?: number;
   make: string; // e.g. Toyota, Lexus, Mercedes-Benz
   model: string; // e.g. Camry, RX 350, GLE 450
   year: number;
