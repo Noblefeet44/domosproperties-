@@ -14,6 +14,9 @@ export interface LandProperty {
   googleMapsUrl?: string;
   agentPhone?: string;
   agentId?: string;
+  youtubeVideoId?: string;
+  youtubeUrl?: string;
+  youtubeThumbnail?: string;
   featured?: boolean;
 }
 

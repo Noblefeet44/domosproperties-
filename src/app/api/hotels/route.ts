@@ -32,6 +32,9 @@ export async function GET() {
       agentId: h.agent_id,
       agentPhone: h.agent_phone,
       googleMapsUrl: h.google_maps_url,
+      youtubeVideoId: h.youtube_video_id,
+      youtubeUrl: h.youtube_url,
+      youtubeThumbnail: h.youtube_thumbnail,
       featured: h.featured,
     }));
 
@@ -67,6 +70,9 @@ export async function POST(req: Request) {
       agent_id: body.agentId || body.agent_id || null,
       agent_phone: body.agentPhone || "07073537007",
       google_maps_url: body.googleMapsUrl,
+      youtube_video_id: body.youtubeVideoId || body.youtube_video_id || null,
+      youtube_url: body.youtubeUrl || body.youtube_url || null,
+      youtube_thumbnail: body.youtubeThumbnail || body.youtube_thumbnail || null,
       featured: body.featured || false,
     };
 

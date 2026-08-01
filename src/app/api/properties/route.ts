@@ -57,6 +57,9 @@ export async function GET() {
             agentPhone: item.agent_phone || "07073537007",
             agentId: item.agent_id || memProp?.agentId,
             googleMapsUrl: item.google_maps_url,
+            youtubeVideoId: item.youtube_video_id || memProp?.youtubeVideoId,
+            youtubeUrl: item.youtube_url || memProp?.youtubeUrl,
+            youtubeThumbnail: item.youtube_thumbnail || memProp?.youtubeThumbnail,
             rooms: item.rooms || [],
             reviews: memProp?.reviews || [],
           };
@@ -125,6 +128,9 @@ export async function POST(request: Request) {
         agent_phone: body.agentPhone || "07073537007",
         google_maps_url: body.googleMapsUrl || "",
         rooms: body.rooms || [],
+        youtube_video_id: body.youtubeVideoId || body.youtube_video_id || null,
+        youtube_url: body.youtubeUrl || body.youtube_url || null,
+        youtube_thumbnail: body.youtubeThumbnail || body.youtube_thumbnail || null,
       };
 
       const { data, error } = await supabase
@@ -191,6 +197,9 @@ export async function PATCH(request: Request) {
       if (updates.images) dbUpdates.images = updates.images;
       if (updates.amenities) dbUpdates.amenities = updates.amenities;
       if (updates.rooms) dbUpdates.rooms = updates.rooms;
+      if (updates.youtubeVideoId !== undefined) dbUpdates.youtube_video_id = updates.youtubeVideoId;
+      if (updates.youtubeUrl !== undefined) dbUpdates.youtube_url = updates.youtubeUrl;
+      if (updates.youtubeThumbnail !== undefined) dbUpdates.youtube_thumbnail = updates.youtubeThumbnail;
 
       const { error } = await supabase
         .from("properties")

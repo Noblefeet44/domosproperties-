@@ -17,6 +17,9 @@ export interface Car {
   features: string[];
   agentPhone?: string;
   agentId?: string;
+  youtubeVideoId?: string;
+  youtubeUrl?: string;
+  youtubeThumbnail?: string;
   featured?: boolean;
 }
 

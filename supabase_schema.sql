@@ -55,6 +55,9 @@ CREATE TABLE properties (
     agent_phone TEXT,
     google_maps_url TEXT,
     rooms JSONB DEFAULT '[]'::jsonb,
+    youtube_video_id TEXT,
+    youtube_url TEXT,
+    youtube_thumbnail TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -78,6 +81,9 @@ CREATE TABLE hotels (
     agent_id TEXT REFERENCES agent_profiles(id) ON DELETE SET NULL,
     agent_phone TEXT,
     google_maps_url TEXT,
+    youtube_video_id TEXT,
+    youtube_url TEXT,
+    youtube_thumbnail TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -102,6 +108,9 @@ CREATE TABLE cars (
     featured BOOLEAN DEFAULT false,
     agent_id TEXT REFERENCES agent_profiles(id) ON DELETE SET NULL,
     agent_phone TEXT,
+    youtube_video_id TEXT,
+    youtube_url TEXT,
+    youtube_thumbnail TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -123,6 +132,9 @@ CREATE TABLE lands (
     featured BOOLEAN DEFAULT false,
     agent_id TEXT REFERENCES agent_profiles(id) ON DELETE SET NULL,
     agent_phone TEXT,
+    youtube_video_id TEXT,
+    youtube_url TEXT,
+    youtube_thumbnail TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -235,3 +247,24 @@ CREATE POLICY "Public Insert Reviews" ON reviews FOR INSERT WITH CHECK (true);
 INSERT INTO agent_profiles (id, name, email, password_hash, whatsapp, office_address, cac_number, profile_image, status, role) VALUES
 ('agent-main', 'DOMOS PROPERTY GLOBAL LIMITED (Headquarters)', 'domospropertygloballimited@gmail.com', 'Admin@password', '07073537007', 'Suit 4, DOMOS Plaza, University Road, Ekpoma, Edo State', 'RC: 7482910', '', 'approved', 'super_admin')
 ON CONFLICT (id) DO NOTHING;
+
+-- ============================================================================
+-- 13. SAFE MIGRATION COMMANDS (FOR EXISTING LIVE DATABASES)
+-- Run ONLY the queries below if you already have live data in your database!
+-- ============================================================================
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE properties ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE hotels ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_url TEXT;
+ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+

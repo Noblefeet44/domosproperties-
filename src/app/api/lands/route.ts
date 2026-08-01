@@ -30,6 +30,9 @@ export async function GET() {
       googleMapsUrl: l.google_maps_url,
       agentId: l.agent_id,
       agentPhone: l.agent_phone,
+      youtubeVideoId: l.youtube_video_id,
+      youtubeUrl: l.youtube_url,
+      youtubeThumbnail: l.youtube_thumbnail,
       featured: l.featured,
     }));
 
@@ -63,6 +66,9 @@ export async function POST(req: Request) {
       google_maps_url: body.googleMapsUrl,
       agent_id: body.agentId || body.agent_id || null,
       agent_phone: body.agentPhone || "07073537007",
+      youtube_video_id: body.youtubeVideoId || body.youtube_video_id || null,
+      youtube_url: body.youtubeUrl || body.youtube_url || null,
+      youtube_thumbnail: body.youtubeThumbnail || body.youtube_thumbnail || null,
       featured: body.featured || false,
     };
 

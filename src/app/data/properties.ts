@@ -39,6 +39,9 @@ export interface Property {
   googleMapsUrl?: string;
   agentPhone?: string;
   agentId?: string;
+  youtubeVideoId?: string;
+  youtubeUrl?: string;
+  youtubeThumbnail?: string;
   createdAt?: string;
 }
 

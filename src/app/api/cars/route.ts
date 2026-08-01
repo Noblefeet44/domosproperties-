@@ -33,6 +33,9 @@ export async function GET() {
       features: c.features || [],
       agentId: c.agent_id,
       agentPhone: c.agent_phone,
+      youtubeVideoId: c.youtube_video_id,
+      youtubeUrl: c.youtube_url,
+      youtubeThumbnail: c.youtube_thumbnail,
       featured: c.featured,
     }));
 
@@ -69,6 +72,9 @@ export async function POST(req: Request) {
       features: body.features || [],
       agent_id: body.agentId || body.agent_id || null,
       agent_phone: body.agentPhone || "07073537007",
+      youtube_video_id: body.youtubeVideoId || body.youtube_video_id || null,
+      youtube_url: body.youtubeUrl || body.youtube_url || null,
+      youtube_thumbnail: body.youtubeThumbnail || body.youtube_thumbnail || null,
       featured: body.featured || false,
     };
 

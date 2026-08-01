@@ -23,6 +23,9 @@ export interface Hotel {
   agentPhone?: string;
   agentId?: string;
   googleMapsUrl?: string;
+  youtubeVideoId?: string;
+  youtubeUrl?: string;
+  youtubeThumbnail?: string;
   featured?: boolean;
 }
 

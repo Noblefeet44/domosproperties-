@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
+import YouTubePlayer from "../../components/YouTubePlayer";
 import { getAllProperties, getPropertyBySlugOrId } from "@/lib/properties";
 import { getPropertySlug } from "@/lib/slug";
 
@@ -258,6 +259,23 @@ export default async function PropertyDetailPage({ params }: PageProps) {
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-8">
           <div className="md:col-span-8 space-y-6">
+            {(property.youtubeVideoId || property.youtubeUrl) && (
+              <div className="glass p-6 rounded-2xl border border-stone-200/50 dark:border-zinc-800/50 space-y-3">
+                <div className="flex items-center gap-2 text-xs font-bold text-stone-900 dark:text-zinc-100 uppercase tracking-wider">
+                  <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  <span>Property Video Tour</span>
+                </div>
+                <YouTubePlayer
+                  videoId={property.youtubeVideoId}
+                  url={property.youtubeUrl}
+                  thumbnailUrl={property.youtubeThumbnail}
+                  title={property.title}
+                />
+              </div>
+            )}
+
             <div className="glass p-6 rounded-2xl border border-stone-200/50 dark:border-zinc-800/50">
               <h2 className="text-sm font-bold uppercase text-stone-400 tracking-wider mb-3">About this Residence</h2>
               <p className="text-xs sm:text-sm leading-relaxed text-stone-700 dark:text-zinc-300">

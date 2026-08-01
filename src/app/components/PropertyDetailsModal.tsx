@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
+import YouTubePlayer from "./YouTubePlayer";
 
 export const PropertyDetailsModal: React.FC = () => {
   const { properties, allAgents, selectedProperty, setSelectedProperty, addBooking } = useApp();
@@ -271,6 +272,22 @@ export const PropertyDetailsModal: React.FC = () => {
 
                 {activeTab === "overview" && (
                   <div className="space-y-4 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                    {(selectedProperty.youtubeVideoId || selectedProperty.youtubeUrl) && (
+                      <div className="space-y-2">
+                        <div className="flex items-center gap-2 text-xs font-bold text-slate-900 dark:text-slate-100">
+                          <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                          </svg>
+                          <span>Official Video Tour</span>
+                        </div>
+                        <YouTubePlayer
+                          videoId={selectedProperty.youtubeVideoId}
+                          url={selectedProperty.youtubeUrl}
+                          thumbnailUrl={selectedProperty.youtubeThumbnail}
+                          title={selectedProperty.title}
+                        />
+                      </div>
+                    )}
                     <p>{selectedProperty.description}</p>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
                       {selectedProperty.amenities?.map((am, i) => (

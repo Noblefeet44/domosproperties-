@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
+import YouTubeVideoUploader from "./YouTubeVideoUploader";
 
 export const HostDashboard: React.FC = () => {
   const { currentAgent, properties, hotels, cars, lands, addProperty, bookings } = useApp();
@@ -17,6 +18,9 @@ export const HostDashboard: React.FC = () => {
   const [bathrooms, setBathrooms] = useState(1);
   const [guests, setGuests] = useState(2);
   const [imageStyle, setImageStyle] = useState<"maitama" | "jabi" | "wuse" | "asokoro">("maitama");
+  const [youtubeVideoId, setYoutubeVideoId] = useState("");
+  const [youtubeUrl, setYoutubeUrl] = useState("");
+  const [youtubeThumbnail, setYoutubeThumbnail] = useState("");
   
   // Amenities list
   const availableAmenities = [
@@ -114,6 +118,9 @@ export const HostDashboard: React.FC = () => {
       guests,
       images: [imagePath],
       amenities: selectedAmenities,
+      youtubeVideoId: youtubeVideoId || undefined,
+      youtubeUrl: youtubeUrl || undefined,
+      youtubeThumbnail: youtubeThumbnail || undefined,
     });
 
     // Reset Form
@@ -122,6 +129,9 @@ export const HostDashboard: React.FC = () => {
     setPrice("");
     setLocation("");
     setSelectedAmenities([]);
+    setYoutubeVideoId("");
+    setYoutubeUrl("");
+    setYoutubeThumbnail("");
     setNotification("Listing successfully created and published!");
 
     setTimeout(() => {
@@ -350,6 +360,30 @@ export const HostDashboard: React.FC = () => {
                   );
                 })}
               </div>
+            </div>
+
+            {/* YouTube Direct Video Uploader */}
+            <div className="pt-2">
+              <label className="block text-[10px] font-semibold text-stone-400 dark:text-zinc-500 uppercase mb-2">
+                Property Video Tour (YouTube Upload)
+              </label>
+              <YouTubeVideoUploader
+                currentVideoId={youtubeVideoId}
+                currentVideoUrl={youtubeUrl}
+                currentThumbnailUrl={youtubeThumbnail}
+                title={title ? `${title} - Video Tour` : "DomosProperty Video Tour"}
+                description={description || "Official Video Tour on DomosProperty"}
+                onUploadSuccess={(result) => {
+                  setYoutubeVideoId(result.videoId);
+                  setYoutubeUrl(result.videoUrl);
+                  setYoutubeThumbnail(result.thumbnailUrl);
+                }}
+                onRemoveVideo={() => {
+                  setYoutubeVideoId("");
+                  setYoutubeUrl("");
+                  setYoutubeThumbnail("");
+                }}
+              />
             </div>
 
             <button
