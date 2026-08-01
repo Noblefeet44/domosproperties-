@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
   const clientId = process.env.YOUTUBE_CLIENT_ID;
   const clientSecret = process.env.YOUTUBE_CLIENT_SECRET;
   const origin = req.nextUrl.origin;
-  const redirectUri = `${origin}/api/youtube/auth/callback`;
+  const redirectUri = process.env.YOUTUBE_REDIRECT_URI || `${origin}/api/youtube/auth/callback`;
 
   if (!clientId || !clientSecret) {
     return new NextResponse(

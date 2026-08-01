@@ -10,9 +10,9 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Construct absolute redirect URL dynamically from request URL
+  // Construct absolute redirect URL dynamically from request URL or env variable
   const origin = req.nextUrl.origin;
-  const redirectUri = `${origin}/api/youtube/auth/callback`;
+  const redirectUri = process.env.YOUTUBE_REDIRECT_URI || `${origin}/api/youtube/auth/callback`;
 
   const scope = "https://www.googleapis.com/auth/youtube.upload";
   const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
