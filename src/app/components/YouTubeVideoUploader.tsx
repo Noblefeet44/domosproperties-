@@ -83,6 +83,61 @@ export default function YouTubeVideoUploader({
 
       setStatusMessage("Uploading video directly to YouTube channel...");
 
+      // Helper for fallback proxy upload
+      const performProxyUpload = async () => {
+        try {
+          setStatusMessage("Switching to secure proxy upload...");
+          
+          const proxyXhr = new XMLHttpRequest();
+          proxyXhr.open("PUT", "/api/youtube/proxy-upload", true);
+          proxyXhr.setRequestHeader("Content-Type", file.type);
+          proxyXhr.setRequestHeader("x-upload-url", uploadUrl);
+
+          proxyXhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable) {
+              const percent = Math.round((evt.loaded / evt.total) * 100);
+              setProgress(percent);
+              if (percent === 100) {
+                setStatusMessage("Processing video on YouTube...");
+              }
+            }
+          };
+
+          proxyXhr.onload = () => {
+            setUploading(false);
+            if (proxyXhr.status >= 200 && proxyXhr.status < 300) {
+              try {
+                const responseData = JSON.parse(proxyXhr.responseText);
+                const videoId = responseData.id;
+                if (videoId) {
+                  const videoUrl = `https://youtu.be/${videoId}`;
+                  const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+                  
+                  setStatusMessage("Upload completed successfully!");
+                  onUploadSuccess({ videoId, videoUrl, thumbnailUrl });
+                } else {
+                  setError("YouTube completed upload but returned no video ID.");
+                }
+              } catch (err) {
+                setError("Failed to parse YouTube upload response.");
+              }
+            } else {
+              setError(`YouTube upload failed with status code ${proxyXhr.status}. Make sure YOUTUBE_REFRESH_TOKEN is saved in Vercel.`);
+            }
+          };
+
+          proxyXhr.onerror = () => {
+            setUploading(false);
+            setError("Upload failed. Please check your internet connection or YOUTUBE_REFRESH_TOKEN in Vercel.");
+          };
+
+          proxyXhr.send(file);
+        } catch (err: any) {
+          setUploading(false);
+          setError(err?.message || "Upload error.");
+        }
+      };
+
       // 2. Direct upload to YouTube via XMLHttpRequest for accurate progress tracking
       const xhr = new XMLHttpRequest();
       xhr.open("PUT", uploadUrl, true);
@@ -99,8 +154,8 @@ export default function YouTubeVideoUploader({
       };
 
       xhr.onload = () => {
-        setUploading(false);
         if (xhr.status >= 200 && xhr.status < 300) {
+          setUploading(false);
           try {
             const responseData = JSON.parse(xhr.responseText);
             const videoId = responseData.id;
@@ -117,13 +172,14 @@ export default function YouTubeVideoUploader({
             setError("Failed to parse YouTube upload response.");
           }
         } else {
-          setError(`YouTube upload failed with status code ${xhr.status}.`);
+          // Fallback to proxy upload on non-2xx status
+          performProxyUpload();
         }
       };
 
       xhr.onerror = () => {
-        setUploading(false);
-        setError("Network error occurred during YouTube upload.");
+        // Direct browser upload CORS/network error -> Fallback to server proxy
+        performProxyUpload();
       };
 
       xhr.send(file);

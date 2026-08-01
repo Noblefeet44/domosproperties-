@@ -59,11 +59,14 @@ export async function POST(req: NextRequest) {
       },
     };
 
+    const requestOrigin = req.headers.get("origin") || req.nextUrl.origin;
+
     const headers: Record<string, string> = {
       Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json; charset=utf-8",
       "X-Upload-Content-Length": String(fileSize || 0),
       "X-Upload-Content-Type": fileType || "video/mp4",
+      Origin: requestOrigin,
     };
 
     const youtubeRes = await fetch(
