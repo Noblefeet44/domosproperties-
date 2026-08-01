@@ -9,6 +9,7 @@ import { getListingCardMedia } from "@/lib/youtube";
 
 export const CarDetailsModal: React.FC = () => {
   const { cars, allAgents, selectedCar, setSelectedCar, addBooking } = useApp();
+  const modalContainerRef = React.useRef<HTMLDivElement>(null);
 
   const [rentDays, setRentDays] = useState(1);
   const [customerName, setCustomerName] = useState("");
@@ -24,6 +25,10 @@ export const CarDetailsModal: React.FC = () => {
       setCustomerName("");
       setCustomerPhone("");
       setActiveImageIndex(0);
+
+      if (modalContainerRef.current) {
+        modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   }, [selectedCar?.id]);
 
@@ -73,7 +78,7 @@ export const CarDetailsModal: React.FC = () => {
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+        <div ref={modalContainerRef} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {

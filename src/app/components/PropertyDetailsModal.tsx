@@ -103,6 +103,9 @@ export const PropertyDetailsModal: React.FC = () => {
 
   const handleSelectSimilarProperty = (prop: Property) => {
     setSelectedProperty(prop);
+    if (modalContainerRef.current) {
+      modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+    }
   };
 
   const handleNextToPayment = (e: React.FormEvent) => {
@@ -151,7 +154,7 @@ export const PropertyDetailsModal: React.FC = () => {
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+        <div ref={modalContainerRef} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
           {/* STEP 1: PROPERTY DETAILS VIEW */}
           {step === "details" && (

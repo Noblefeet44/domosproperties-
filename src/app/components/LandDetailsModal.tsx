@@ -9,6 +9,7 @@ import { getListingCardMedia } from "@/lib/youtube";
 
 export const LandDetailsModal: React.FC = () => {
   const { lands, allAgents, selectedLand, setSelectedLand, addBooking } = useApp();
+  const modalContainerRef = React.useRef<HTMLDivElement>(null);
 
   const [inspectionDate, setInspectionDate] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -24,6 +25,10 @@ export const LandDetailsModal: React.FC = () => {
       setCustomerPhone("");
       setNotes("");
       setActiveImageIndex(0);
+
+      if (modalContainerRef.current) {
+        modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   }, [selectedLand?.id]);
 
@@ -69,7 +74,7 @@ export const LandDetailsModal: React.FC = () => {
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+        <div ref={modalContainerRef} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {

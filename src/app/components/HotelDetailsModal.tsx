@@ -9,6 +9,7 @@ import { getListingCardMedia } from "@/lib/youtube";
 
 export const HotelDetailsModal: React.FC = () => {
   const { hotels, allAgents, selectedHotel, setSelectedHotel, addBooking } = useApp();
+  const modalContainerRef = React.useRef<HTMLDivElement>(null);
 
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
@@ -37,6 +38,10 @@ export const HotelDetailsModal: React.FC = () => {
         setSelectedRoomName(selectedHotel.rooms[0].name);
       } else {
         setSelectedRoomName("Standard Suite");
+      }
+
+      if (modalContainerRef.current) {
+        modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
       }
     }
   }, [selectedHotel?.id]);
@@ -119,7 +124,7 @@ export const HotelDetailsModal: React.FC = () => {
         </div>
 
         {/* Scrollable Body */}
-        <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
+        <div ref={modalContainerRef} className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
 
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
