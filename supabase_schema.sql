@@ -27,6 +27,7 @@ CREATE TABLE agent_profiles (
     profile_image TEXT,
     status TEXT NOT NULL DEFAULT 'approved' CHECK (status IN ('approved', 'pending', 'banned')),
     role TEXT NOT NULL DEFAULT 'agent' CHECK (role IN ('agent', 'super_admin')),
+    telegram_chat_id TEXT,
     created_at TIMESTAMPTZ DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
@@ -267,4 +268,6 @@ ALTER TABLE cars ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_video_id TEXT;
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_url TEXT;
 ALTER TABLE lands ADD COLUMN IF NOT EXISTS youtube_thumbnail TEXT;
+
+ALTER TABLE agent_profiles ADD COLUMN IF NOT EXISTS telegram_chat_id TEXT;
 

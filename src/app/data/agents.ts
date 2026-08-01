@@ -9,6 +9,7 @@ export interface AgentProfile {
   profileImage?: string;
   status: 'pending' | 'approved' | 'banned';
   role: 'agent' | 'super_admin';
+  telegramChatId?: string;
   createdAt?: string;
 }
 
