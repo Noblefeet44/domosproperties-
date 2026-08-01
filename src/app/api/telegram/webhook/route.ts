@@ -579,9 +579,20 @@ export async function POST(req: NextRequest) {
       if (supabase) {
         const { data } = await supabase
           .from("agent_profiles")
-          .select("*")
-          .or(`email.ilike.${input},whatsapp.eq.${input}`);
-        if (data && data.length > 0) agentMatch = data[0];
+          .select("*");
+        if (data && data.length > 0) {
+          const cleanInput = input.replace(/\D/g, "");
+          const normInput = cleanInput.startsWith("234") && cleanInput.length >= 12 ? "0" + cleanInput.slice(3) : cleanInput;
+          agentMatch = data.find((a: any) => {
+            if (a.email && a.email.toLowerCase() === input) return true;
+            if (a.whatsapp) {
+              const cleanA = a.whatsapp.replace(/\D/g, "");
+              const normA = cleanA.startsWith("234") && cleanA.length >= 12 ? "0" + cleanA.slice(3) : cleanA;
+              return normInput && normA && (normInput === normA || normInput.endsWith(normA) || normA.endsWith(normInput));
+            }
+            return false;
+          });
+        }
       }
 
       if (agentMatch) {
