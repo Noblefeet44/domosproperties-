@@ -83,12 +83,14 @@ export default function AdminPage() {
     bookings,
   } = useApp();
 
-  // Auth Modes
+  // Auth Modes & Loading
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
   const [loginEmail, setLoginEmail] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
   const [authError, setAuthError] = useState("");
   const [shake, setShake] = useState(false);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [formSubmitting, setFormSubmitting] = useState(false);
 
   // Sign Up Form States
   const [regName, setRegName] = useState("");
@@ -235,33 +237,43 @@ export default function AdminPage() {
   const handleLoginSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
-    const res = await loginAgent(loginEmail, loginPassword);
-    if (!res.success) {
-      setAuthError(res.error || "Authentication failed");
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+    setAuthLoading(true);
+    try {
+      const res = await loginAgent(loginEmail, loginPassword);
+      if (!res.success) {
+        setAuthError(res.error || "Authentication failed");
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+      }
+    } finally {
+      setAuthLoading(false);
     }
   };
 
   const handleSignUpSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError("");
-    const res = await registerAgent({
-      name: regName,
-      email: regEmail,
-      password: regPassword,
-      whatsapp: regWhatsapp,
-      officeAddress: regOfficeAddress,
-      cacNumber: regCacNumber,
-      profileImage: regProfileImage || "/images/ehis_hostel.png",
-    });
+    setAuthLoading(true);
+    try {
+      const res = await registerAgent({
+        name: regName,
+        email: regEmail,
+        password: regPassword,
+        whatsapp: regWhatsapp,
+        officeAddress: regOfficeAddress,
+        cacNumber: regCacNumber,
+        profileImage: regProfileImage || "/images/ehis_hostel.png",
+      });
 
-    if (res.success) {
-      showNotify("🎉 Agent account registered and logged in successfully!");
-    } else {
-      setAuthError(res.message || "Registration failed");
-      setShake(true);
-      setTimeout(() => setShake(false), 500);
+      if (res.success) {
+        showNotify("🎉 Agent account registered and logged in successfully!");
+      } else {
+        setAuthError(res.message || "Registration failed");
+        setShake(true);
+        setTimeout(() => setShake(false), 500);
+      }
+    } finally {
+      setAuthLoading(false);
     }
   };
 
@@ -365,207 +377,227 @@ export default function AdminPage() {
   // SUBMIT HANDLERS
   const handlePropSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
-    const agentPhone = currentAgent?.whatsapp || "07073537007";
+    setFormSubmitting(true);
+    try {
+      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
+      const agentPhone = currentAgent?.whatsapp || "07073537007";
 
-    if (editingPropId) {
-      await updateProperty(editingPropId, {
-        title: propTitle,
-        description: propDesc,
-        price: Number(propPrice),
-        cautionFee: Number(propCautionFee) || 0,
-        reservationFee: Number(propReservationFee) || 0,
-        agencyFee: Number(propAgencyFee) || 0,
-        inspectionFee: Number(propInspectionFee) || 0,
-        legalFee: Number(propLegalFee) || 0,
-        location: propLocation,
-        neighborhood: propNeighborhood,
-        bedrooms: propBedrooms,
-        bathrooms: propBathrooms,
-        guests: propGuests,
-        amenities: propAmenities,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("Apartment updated successfully!");
-    } else {
-      await addProperty({
-        title: propTitle,
-        description: propDesc,
-        price: Number(propPrice),
-        cautionFee: Number(propCautionFee) || 0,
-        reservationFee: Number(propReservationFee) || 0,
-        agencyFee: Number(propAgencyFee) || 0,
-        inspectionFee: Number(propInspectionFee) || 0,
-        legalFee: Number(propLegalFee) || 0,
-        location: propLocation,
-        neighborhood: propNeighborhood,
-        bedrooms: propBedrooms,
-        bathrooms: propBathrooms,
-        guests: propGuests,
-        amenities: propAmenities,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("New apartment listing created successfully!");
+      if (editingPropId) {
+        await updateProperty(editingPropId, {
+          title: propTitle,
+          description: propDesc,
+          price: Number(propPrice),
+          cautionFee: Number(propCautionFee) || 0,
+          reservationFee: Number(propReservationFee) || 0,
+          agencyFee: Number(propAgencyFee) || 0,
+          inspectionFee: Number(propInspectionFee) || 0,
+          legalFee: Number(propLegalFee) || 0,
+          location: propLocation,
+          neighborhood: propNeighborhood,
+          bedrooms: propBedrooms,
+          bathrooms: propBathrooms,
+          guests: propGuests,
+          amenities: propAmenities,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("Apartment updated successfully!");
+      } else {
+        await addProperty({
+          title: propTitle,
+          description: propDesc,
+          price: Number(propPrice),
+          cautionFee: Number(propCautionFee) || 0,
+          reservationFee: Number(propReservationFee) || 0,
+          agencyFee: Number(propAgencyFee) || 0,
+          inspectionFee: Number(propInspectionFee) || 0,
+          legalFee: Number(propLegalFee) || 0,
+          location: propLocation,
+          neighborhood: propNeighborhood,
+          bedrooms: propBedrooms,
+          bathrooms: propBathrooms,
+          guests: propGuests,
+          amenities: propAmenities,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("New apartment listing created successfully!");
+      }
+      resetAllForms();
+    } finally {
+      setFormSubmitting(false);
     }
-    resetAllForms();
   };
 
   const handleHotelSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
-    const agentPhone = currentAgent?.whatsapp || "07073537007";
+    setFormSubmitting(true);
+    try {
+      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
+      const agentPhone = currentAgent?.whatsapp || "07073537007";
 
-    if (editingHotelId) {
-      await updateHotel(editingHotelId, {
-        title: hotelTitle,
-        description: hotelDesc,
-        pricePerNight: Number(hotelPricePerNight),
-        starRating: Number(hotelStarRating),
-        location: hotelLocation,
-        neighborhood: hotelNeighborhood,
-        checkInTime: hotelCheckInTime,
-        checkOutTime: hotelCheckOutTime,
-        cancellationPolicy: hotelCancellationPolicy,
-        amenities: hotelAmenities,
-        rooms: hotelRooms,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("Hotel updated successfully!");
-    } else {
-      await addHotel({
-        title: hotelTitle,
-        description: hotelDesc,
-        pricePerNight: Number(hotelPricePerNight),
-        location: hotelLocation,
-        neighborhood: hotelNeighborhood,
-        checkInTime: hotelCheckInTime,
-        checkOutTime: hotelCheckOutTime,
-        cancellationPolicy: hotelCancellationPolicy,
-        amenities: hotelAmenities,
-        rooms: hotelRooms,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("New hotel listed successfully!");
+      if (editingHotelId) {
+        await updateHotel(editingHotelId, {
+          title: hotelTitle,
+          description: hotelDesc,
+          pricePerNight: Number(hotelPricePerNight),
+          starRating: Number(hotelStarRating),
+          location: hotelLocation,
+          neighborhood: hotelNeighborhood,
+          checkInTime: hotelCheckInTime,
+          checkOutTime: hotelCheckOutTime,
+          cancellationPolicy: hotelCancellationPolicy,
+          amenities: hotelAmenities,
+          rooms: hotelRooms,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("Hotel updated successfully!");
+      } else {
+        await addHotel({
+          title: hotelTitle,
+          description: hotelDesc,
+          pricePerNight: Number(hotelPricePerNight),
+          location: hotelLocation,
+          neighborhood: hotelNeighborhood,
+          checkInTime: hotelCheckInTime,
+          checkOutTime: hotelCheckOutTime,
+          cancellationPolicy: hotelCancellationPolicy,
+          amenities: hotelAmenities,
+          rooms: hotelRooms,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("New hotel listed successfully!");
+      }
+      resetAllForms();
+    } finally {
+      setFormSubmitting(false);
     }
-    resetAllForms();
   };
 
   const handleCarSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/royal_villa.png"];
-    const agentPhone = currentAgent?.whatsapp || "07073537007";
+    setFormSubmitting(true);
+    try {
+      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/royal_villa.png"];
+      const agentPhone = currentAgent?.whatsapp || "07073537007";
 
-    if (editingCarId) {
-      await updateCar(editingCarId, {
-        title: carTitle,
-        description: carDesc,
-        listingType: carListingType,
-        price: Number(carPrice),
-        make: carMake,
-        model: carModel,
-        year: carYear,
-        transmission: carTransmission,
-        fuelType: carFuelType,
-        seats: carSeats,
-        mileage: carMileage,
-        condition: carCondition,
-        location: carLocation,
-        features: carFeatures,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("Vehicle updated successfully!");
-    } else {
-      await addCar({
-        title: carTitle,
-        description: carDesc,
-        listingType: carListingType,
-        price: Number(carPrice),
-        make: carMake,
-        model: carModel,
-        year: carYear,
-        transmission: carTransmission,
-        fuelType: carFuelType,
-        seats: carSeats,
-        mileage: carMileage,
-        condition: carCondition,
-        location: carLocation,
-        features: carFeatures,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("New vehicle listed successfully!");
+      if (editingCarId) {
+        await updateCar(editingCarId, {
+          title: carTitle,
+          description: carDesc,
+          listingType: carListingType,
+          price: Number(carPrice),
+          make: carMake,
+          model: carModel,
+          year: carYear,
+          transmission: carTransmission,
+          fuelType: carFuelType,
+          seats: carSeats,
+          mileage: carMileage,
+          condition: carCondition,
+          location: carLocation,
+          features: carFeatures,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("Vehicle updated successfully!");
+      } else {
+        await addCar({
+          title: carTitle,
+          description: carDesc,
+          listingType: carListingType,
+          price: Number(carPrice),
+          make: carMake,
+          model: carModel,
+          year: carYear,
+          transmission: carTransmission,
+          fuelType: carFuelType,
+          seats: carSeats,
+          mileage: carMileage,
+          condition: carCondition,
+          location: carLocation,
+          features: carFeatures,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("New vehicle listed successfully!");
+      }
+      resetAllForms();
+    } finally {
+      setFormSubmitting(false);
     }
-    resetAllForms();
   };
 
   const handleLandSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/treasure_hostel.png"];
-    const agentPhone = currentAgent?.whatsapp || "07073537007";
+    setFormSubmitting(true);
+    try {
+      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/treasure_hostel.png"];
+      const agentPhone = currentAgent?.whatsapp || "07073537007";
 
-    if (editingLandId) {
-      await updateLand(editingLandId, {
-        title: landTitle,
-        description: landDesc,
-        price: Number(landPrice),
-        size: landSize,
-        titleDocument: landTitleDocument,
-        zoning: landZoning,
-        status: landStatus,
-        location: landLocation,
-        neighborhood: landNeighborhood,
-        features: landFeatures,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("Land listing updated successfully!");
-    } else {
-      await addLand({
-        title: landTitle,
-        description: landDesc,
-        price: Number(landPrice),
-        size: landSize,
-        titleDocument: landTitleDocument,
-        zoning: landZoning,
-        status: landStatus,
-        location: landLocation,
-        neighborhood: landNeighborhood,
-        features: landFeatures,
-        agentPhone,
-        images: finalImages,
-        youtubeVideoId: youtubeVideoId || undefined,
-        youtubeUrl: youtubeUrl || undefined,
-        youtubeThumbnail: youtubeThumbnail || undefined,
-      });
-      showNotify("New land plot listed successfully!");
+      if (editingLandId) {
+        await updateLand(editingLandId, {
+          title: landTitle,
+          description: landDesc,
+          price: Number(landPrice),
+          size: landSize,
+          titleDocument: landTitleDocument,
+          zoning: landZoning,
+          status: landStatus,
+          location: landLocation,
+          neighborhood: landNeighborhood,
+          features: landFeatures,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("Land listing updated successfully!");
+      } else {
+        await addLand({
+          title: landTitle,
+          description: landDesc,
+          price: Number(landPrice),
+          size: landSize,
+          titleDocument: landTitleDocument,
+          zoning: landZoning,
+          status: landStatus,
+          location: landLocation,
+          neighborhood: landNeighborhood,
+          features: landFeatures,
+          agentPhone,
+          images: finalImages,
+          youtubeVideoId: youtubeVideoId || undefined,
+          youtubeUrl: youtubeUrl || undefined,
+          youtubeThumbnail: youtubeThumbnail || undefined,
+        });
+        showNotify("New land plot listed successfully!");
+      }
+      resetAllForms();
+    } finally {
+      setFormSubmitting(false);
     }
-    resetAllForms();
   };
 
   // Render Login & Registration Lock Screen if not authenticated
@@ -636,9 +668,20 @@ export default function AdminPage() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl gold-bg-gradient font-bold text-sm text-white shadow-lg hover:opacity-95 cursor-pointer"
+                disabled={authLoading}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient font-bold text-sm text-white shadow-lg hover:opacity-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Sign In to Portal
+                {authLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Signing In & Verifying Account…</span>
+                  </>
+                ) : (
+                  "Sign In to Portal"
+                )}
               </button>
             </form>
           ) : (
@@ -736,9 +779,20 @@ export default function AdminPage() {
 
               <button
                 type="submit"
-                className="w-full py-3.5 rounded-2xl gold-bg-gradient font-bold text-sm text-white shadow-lg hover:opacity-95 cursor-pointer mt-2"
+                disabled={authLoading}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient font-bold text-sm text-white shadow-lg hover:opacity-95 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 mt-2"
               >
-                Complete Registration & Access Portal
+                {authLoading ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>Registering Agency & Account…</span>
+                  </>
+                ) : (
+                  "Complete Registration & Access Portal"
+                )}
               </button>
             </form>
           )}
@@ -894,9 +948,9 @@ export default function AdminPage() {
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  👑 Super-Admin Agent Directory & Governance ({allAgents.length})
+                  👑 Registered Agents Directory ({allAgents.filter((a) => a.role !== "super_admin").length})
                 </h3>
-                <p className="text-xs text-slate-500">Oversee all registered agents, view full details & manage account statuses</p>
+                <p className="text-xs text-slate-500">Oversee all registered third-party agents, inspect uploaded listings & manage account profiles</p>
               </div>
               <span className="px-3 py-1 rounded-full text-[10px] font-extrabold bg-purple-100 dark:bg-purple-950 text-purple-600">
                 Master Governance Mode
@@ -904,7 +958,7 @@ export default function AdminPage() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {allAgents.map((agent) => {
+              {allAgents.filter((a) => a.role !== "super_admin").map((agent) => {
                 const agentPropsCount = properties.filter((p) => p.agentId === agent.id).length;
                 const agentHotelsCount = hotels.filter((h) => h.agentId === agent.id).length;
                 const agentCarsCount = cars.filter((c) => c.agentId === agent.id).length;
@@ -1491,8 +1545,22 @@ export default function AdminPage() {
                 description="Select multiple photos at once from your phone or laptop. The first image will be set as the main cover photo."
               />
 
-              <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
-                {editingPropId ? "Save Apartment Changes" : "Submit Apartment Listing"}
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                {formSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>{editingPropId ? "Saving Apartment Changes…" : "Publishing Apartment Listing…"}</span>
+                  </>
+                ) : (
+                  editingPropId ? "Save Apartment Changes" : "Submit Apartment Listing"
+                )}
               </button>
             </form>
           )
@@ -1731,8 +1799,22 @@ export default function AdminPage() {
                 description="Upload multiple exterior, reception, or luxury room photos."
               />
 
-              <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
-                {editingHotelId ? "Save Hotel Changes" : "Submit Hotel Listing"}
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                {formSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>{editingHotelId ? "Saving Hotel Changes…" : "Publishing Hotel Listing…"}</span>
+                  </>
+                ) : (
+                  editingHotelId ? "Save Hotel Changes" : "Submit Hotel Listing"
+                )}
               </button>
             </form>
           )
@@ -1900,8 +1982,22 @@ export default function AdminPage() {
                 description="Upload exterior, interior, engine bay, and wheel photos."
               />
 
-              <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
-                {editingCarId ? "Save Vehicle Changes" : "Submit Vehicle Listing"}
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                {formSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>{editingCarId ? "Saving Vehicle Changes…" : "Publishing Vehicle Listing…"}</span>
+                  </>
+                ) : (
+                  editingCarId ? "Save Vehicle Changes" : "Submit Vehicle Listing"
+                )}
               </button>
             </form>
           )
@@ -2056,8 +2152,22 @@ export default function AdminPage() {
                 description="Upload site photos, beacon layout, and survey plan documents."
               />
 
-              <button type="submit" className="w-full py-3 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer">
-                {editingLandId ? "Save Land Changes" : "Submit Land Listing"}
+              <button
+                type="submit"
+                disabled={formSubmitting}
+                className="w-full py-3.5 rounded-2xl gold-bg-gradient text-white font-bold text-xs cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-md transition-all"
+              >
+                {formSubmitting ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span>{editingLandId ? "Saving Land Changes…" : "Publishing Land Listing…"}</span>
+                  </>
+                ) : (
+                  editingLandId ? "Save Land Changes" : "Submit Land Listing"
+                )}
               </button>
             </form>
           )
