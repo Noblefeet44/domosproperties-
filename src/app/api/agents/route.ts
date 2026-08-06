@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/public";
 import { INITIAL_AGENTS, AgentProfile } from "../../data/agents";
 
 // Memory fallback store for agent profiles across devices
@@ -21,7 +21,7 @@ const setMemoryAgents = (agents: AgentProfile[]) => {
 
 export async function GET() {
   try {
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     if (supabase) {
       const { data, error } = await supabase
         .from("agent_profiles")
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     const id = body.id || "agent-" + Math.random().toString(36).substring(2, 9);
 
     // Check for duplicate email or WhatsApp in database first
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     if (supabase) {
       // Check duplicate email
       const { data: existingEmail } = await supabase
@@ -133,16 +133,21 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   try {
     const body = await req.json();
-    const { id, status, name, whatsapp } = body;
+    const { id, status, name, whatsapp, email, officeAddress, cacNumber, profileImage, role } = body;
     if (!id) {
       return NextResponse.json({ error: "Agent ID is required" }, { status: 400 });
     }
 
-    // Build the update payload with only the fields that were provided
+    // Build update payload
     const updateFields: Partial<AgentProfile> = {};
     if (status) updateFields.status = status;
     if (name !== undefined) updateFields.name = name;
     if (whatsapp !== undefined) updateFields.whatsapp = whatsapp;
+    if (email !== undefined) updateFields.email = email;
+    if (officeAddress !== undefined) updateFields.officeAddress = officeAddress;
+    if (cacNumber !== undefined) updateFields.cacNumber = cacNumber;
+    if (profileImage !== undefined) updateFields.profileImage = profileImage;
+    if (role !== undefined) updateFields.role = role;
 
     const currentMemory = getMemoryAgents();
     const updatedMemory = currentMemory.map((a) =>
@@ -150,15 +155,20 @@ export async function PATCH(req: Request) {
     );
     setMemoryAgents(updatedMemory);
 
-    const supabase = await createClient();
+    const supabase = createPublicClient();
     if (supabase) {
-      // Map camelCase fields to snake_case DB columns
-      const dbUpdate: Record<string, string> = {};
+      const dbUpdate: Record<string, any> = {};
       if (status) dbUpdate.status = status;
       if (name !== undefined) dbUpdate.name = name;
       if (whatsapp !== undefined) dbUpdate.whatsapp = whatsapp;
+      if (email !== undefined) dbUpdate.email = email;
+      if (officeAddress !== undefined) dbUpdate.office_address = officeAddress;
+      if (cacNumber !== undefined) dbUpdate.cac_number = cacNumber;
+      if (profileImage !== undefined) dbUpdate.profile_image = profileImage;
+      if (role !== undefined) dbUpdate.role = role;
 
-      await supabase.from("agent_profiles").update(dbUpdate).eq("id", id);
+      const { error } = await supabase.from("agent_profiles").update(dbUpdate).eq("id", id);
+      if (error) console.warn("Supabase agent update error:", error.message);
     }
 
     return NextResponse.json({ success: true });

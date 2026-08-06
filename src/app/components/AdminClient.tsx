@@ -111,7 +111,12 @@ export default function AdminPage() {
   // Agent Edit States (super-admin only)
   const [editingAgentId, setEditingAgentId] = useState<string | null>(null);
   const [editAgentName, setEditAgentName] = useState("");
+  const [editAgentEmail, setEditAgentEmail] = useState("");
   const [editAgentWhatsapp, setEditAgentWhatsapp] = useState("");
+  const [editAgentOfficeAddress, setEditAgentOfficeAddress] = useState("");
+  const [editAgentCacNumber, setEditAgentCacNumber] = useState("");
+  const [editAgentProfileImage, setEditAgentProfileImage] = useState("");
+  const [editAgentStatus, setEditAgentStatus] = useState<'approved' | 'pending' | 'banned'>("approved");
   const [agentEditSaving, setAgentEditSaving] = useState(false);
 
   useEffect(() => {
@@ -900,10 +905,10 @@ export default function AdminPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {allAgents.map((agent) => {
-                const agentPropsCount = properties.filter((p) => p.agentId === agent.id || p.agentPhone === agent.whatsapp).length;
-                const agentHotelsCount = hotels.filter((h) => h.agentId === agent.id || h.agentPhone === agent.whatsapp).length;
-                const agentCarsCount = cars.filter((c) => c.agentId === agent.id || c.agentPhone === agent.whatsapp).length;
-                const agentLandsCount = lands.filter((l) => l.agentId === agent.id || l.agentPhone === agent.whatsapp).length;
+                const agentPropsCount = properties.filter((p) => p.agentId === agent.id).length;
+                const agentHotelsCount = hotels.filter((h) => h.agentId === agent.id).length;
+                const agentCarsCount = cars.filter((c) => c.agentId === agent.id).length;
+                const agentLandsCount = lands.filter((l) => l.agentId === agent.id).length;
                 const totalListings = agentPropsCount + agentHotelsCount + agentCarsCount + agentLandsCount;
 
                 return (
@@ -953,7 +958,7 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                      <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 pt-1">
                       <button
                         onClick={() => setViewingAgentListings(agent)}
                         className="w-full sm:w-auto flex-1 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-700 text-white font-extrabold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 shadow-sm"
@@ -969,7 +974,12 @@ export default function AdminPage() {
                           } else {
                             setEditingAgentId(agent.id);
                             setEditAgentName(agent.name);
+                            setEditAgentEmail(agent.email);
                             setEditAgentWhatsapp(agent.whatsapp);
+                            setEditAgentOfficeAddress(agent.officeAddress);
+                            setEditAgentCacNumber(agent.cacNumber);
+                            setEditAgentProfileImage(agent.profileImage || "");
+                            setEditAgentStatus(agent.status);
                           }
                         }}
                         className="w-full sm:w-auto px-3 py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-extrabold text-xs transition-colors cursor-pointer flex items-center justify-center gap-1"
@@ -999,46 +1009,115 @@ export default function AdminPage() {
                       )}
                     </div>
 
-                    {/* Inline Edit Agent Form */}
+                    {/* Expanded Super-Admin Edit Agent Form */}
                     {editingAgentId === agent.id && (
                       <div className="mt-3 p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 space-y-3 animate-in fade-in">
-                        <h5 className="text-xs font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider">✏️ Edit Agent Info</h5>
-                        <div className="space-y-2">
-                          <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Agent Name</label>
+                        <h5 className="text-xs font-extrabold text-sky-700 dark:text-sky-300 uppercase tracking-wider">✏️ Edit Agent Profile</h5>
+                        
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Agent Name</label>
+                            <input
+                              type="text"
+                              value={editAgentName}
+                              onChange={(e) => setEditAgentName(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                              placeholder="Agent full name"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Email Address</label>
+                            <input
+                              type="email"
+                              value={editAgentEmail}
+                              onChange={(e) => setEditAgentEmail(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                              placeholder="agent@email.com"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">WhatsApp / Phone</label>
+                            <input
+                              type="text"
+                              value={editAgentWhatsapp}
+                              onChange={(e) => setEditAgentWhatsapp(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                              placeholder="07073537007"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">CAC Reg Number</label>
+                            <input
+                              type="text"
+                              value={editAgentCacNumber}
+                              onChange={(e) => setEditAgentCacNumber(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                              placeholder="RC: 1234567"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Office Address</label>
                           <input
                             type="text"
-                            value={editAgentName}
-                            onChange={(e) => setEditAgentName(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
-                            placeholder="Agent full name"
+                            value={editAgentOfficeAddress}
+                            onChange={(e) => setEditAgentOfficeAddress(e.target.value)}
+                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                            placeholder="Full office location address"
                           />
                         </div>
-                        <div className="space-y-2">
-                          <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">WhatsApp / Phone Number</label>
-                          <input
-                            type="text"
-                            value={editAgentWhatsapp}
-                            onChange={(e) => setEditAgentWhatsapp(e.target.value)}
-                            className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
-                            placeholder="e.g. 07073537007"
-                          />
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Profile Image URL</label>
+                            <input
+                              type="text"
+                              value={editAgentProfileImage}
+                              onChange={(e) => setEditAgentProfileImage(e.target.value)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-semibold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                              placeholder="https://..."
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-300">Account Status</label>
+                            <select
+                              value={editAgentStatus}
+                              onChange={(e) => setEditAgentStatus(e.target.value as any)}
+                              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-400 outline-none"
+                            >
+                              <option value="approved">Approved</option>
+                              <option value="pending">Pending</option>
+                              <option value="banned">Banned</option>
+                            </select>
+                          </div>
                         </div>
+
                         <button
-                          disabled={agentEditSaving || (!editAgentName.trim() && !editAgentWhatsapp.trim())}
+                          disabled={agentEditSaving || !editAgentName.trim()}
                           onClick={async () => {
                             setAgentEditSaving(true);
                             await updateAgentInfo(agent.id, {
                               name: editAgentName.trim(),
+                              email: editAgentEmail.trim(),
                               whatsapp: editAgentWhatsapp.trim(),
+                              officeAddress: editAgentOfficeAddress.trim(),
+                              cacNumber: editAgentCacNumber.trim(),
+                              profileImage: editAgentProfileImage.trim(),
+                              status: editAgentStatus,
                             });
                             setAgentEditSaving(false);
                             setEditingAgentId(null);
-                            setNotification(`✅ Agent "${editAgentName.trim()}" info updated successfully!`);
+                            setNotification(`✅ Agent "${editAgentName.trim()}" profile updated successfully!`);
                             setTimeout(() => setNotification(""), 4000);
                           }}
-                          className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs transition-colors cursor-pointer shadow-sm"
+                          className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-extrabold text-xs transition-colors cursor-pointer shadow-sm mt-2"
                         >
-                          {agentEditSaving ? "Saving…" : "💾 Save Changes"}
+                          {agentEditSaving ? "Saving…" : "💾 Save Profile Changes"}
                         </button>
                       </div>
                     )}
@@ -1080,10 +1159,10 @@ export default function AdminPage() {
               {/* Scrollable Listings List */}
               <div className="p-5 overflow-y-auto space-y-6 flex-1">
                 {(() => {
-                  const agentProps = properties.filter((p) => p.agentId === viewingAgentListings.id || p.agentPhone === viewingAgentListings.whatsapp);
-                  const agentHotels = hotels.filter((h) => h.agentId === viewingAgentListings.id || h.agentPhone === viewingAgentListings.whatsapp);
-                  const agentCars = cars.filter((c) => c.agentId === viewingAgentListings.id || c.agentPhone === viewingAgentListings.whatsapp);
-                  const agentLands = lands.filter((l) => l.agentId === viewingAgentListings.id || l.agentPhone === viewingAgentListings.whatsapp);
+                  const agentProps = properties.filter((p) => p.agentId === viewingAgentListings.id);
+                  const agentHotels = hotels.filter((h) => h.agentId === viewingAgentListings.id);
+                  const agentCars = cars.filter((c) => c.agentId === viewingAgentListings.id);
+                  const agentLands = lands.filter((l) => l.agentId === viewingAgentListings.id);
                   const grandTotal = agentProps.length + agentHotels.length + agentCars.length + agentLands.length;
 
                   if (grandTotal === 0) {

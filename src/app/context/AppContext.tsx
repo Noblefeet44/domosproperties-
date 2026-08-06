@@ -44,7 +44,7 @@ interface AppContextType {
   loginAgent: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logoutAgent: () => void;
   updateAgentStatus: (agentId: string, status: 'approved' | 'banned' | 'pending') => Promise<void>;
-  updateAgentInfo: (agentId: string, fields: { name?: string; whatsapp?: string }) => Promise<void>;
+  updateAgentInfo: (agentId: string, fields: Partial<AgentProfile>) => Promise<void>;
   refreshAgents: () => Promise<void>;
 
   // Datasets
@@ -222,7 +222,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const updateAgentInfo = async (agentId: string, fields: { name?: string; whatsapp?: string }) => {
+  const updateAgentInfo = async (agentId: string, fields: Partial<AgentProfile>) => {
     setAllAgents((prev) =>
       prev.map((a) => (a.id === agentId ? { ...a, ...fields } : a))
     );
