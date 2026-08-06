@@ -45,34 +45,13 @@ export const HostDashboard: React.FC = () => {
   const [notification, setNotification] = useState("");
 
   // Calculate listings & earnings for current agent across all 4 categories
-  const normalizePhone = (phone?: string) => {
-    if (!phone) return "";
-    const clean = phone.replace(/\D/g, "");
-    if (clean.startsWith("234") && clean.length >= 12) {
-      return "0" + clean.slice(3);
-    }
-    return clean;
-  };
-
   const isAgentItem = (item: any) => {
     if (!currentAgent) return false;
     if (currentAgent.role === "super_admin") return true;
     
-    // Primary strict check by unique agent ID (camelCase or snake_case)
+    // Strict check by unique agent ID only (no phone-based matching to prevent cross-listing)
     const itemAgentId = item.agentId || item.agent_id;
-    if (itemAgentId && currentAgent.id && String(itemAgentId) === String(currentAgent.id)) return true;
-    
-    // Secondary check by agent WhatsApp phone (normalized)
-    const itemPhone = item.agentPhone || item.agent_phone;
-    if (itemPhone && currentAgent.whatsapp) {
-      const cleanItemPhone = normalizePhone(itemPhone);
-      const cleanAgentPhone = normalizePhone(currentAgent.whatsapp);
-      if (cleanItemPhone && cleanAgentPhone && cleanItemPhone === cleanAgentPhone && cleanItemPhone !== "07073537007") {
-        return true;
-      }
-    }
-    
-    return false;
+    return !!(itemAgentId && currentAgent.id && String(itemAgentId) === String(currentAgent.id));
   };
 
   const hostProperties = currentAgent ? properties.filter(isAgentItem) : properties;

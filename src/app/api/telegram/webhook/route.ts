@@ -1013,7 +1013,8 @@ async function finalizeAndPublishListing(chatId: string, session: AgentWizardSes
 
   const supabase = await createClient();
   const category = session.category || "apartment";
-  const id = `${category.slice(0, 4)}-` + Math.random().toString(36).substring(2, 9);
+  const prefix = category === "apartment" ? "prop" : category.slice(0, 4);
+  const id = `${prefix}-` + Math.random().toString(36).substring(2, 9);
   
   // If video thumbnail/video exists and no images were attached, use video thumbnail/URL as main image
   let images = session.images.length > 0 ? session.images : [];

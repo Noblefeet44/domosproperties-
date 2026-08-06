@@ -200,6 +200,13 @@ export async function PATCH(request: Request) {
       if (updates.youtubeVideoId !== undefined) dbUpdates.youtube_video_id = updates.youtubeVideoId;
       if (updates.youtubeUrl !== undefined) dbUpdates.youtube_url = updates.youtubeUrl;
       if (updates.youtubeThumbnail !== undefined) dbUpdates.youtube_thumbnail = updates.youtubeThumbnail;
+      if (updates.agentId !== undefined) dbUpdates.agent_id = updates.agentId;
+      if (updates.agentPhone !== undefined) dbUpdates.agent_phone = updates.agentPhone;
+      if (updates.bedrooms !== undefined) dbUpdates.bedrooms = updates.bedrooms;
+      if (updates.bathrooms !== undefined) dbUpdates.bathrooms = updates.bathrooms;
+      if (updates.guests !== undefined) dbUpdates.guests = updates.guests;
+      if (updates.featured !== undefined) dbUpdates.featured = updates.featured;
+      if (updates.googleMapsUrl !== undefined) dbUpdates.google_maps_url = updates.googleMapsUrl;
 
       const { error } = await supabase
         .from("properties")

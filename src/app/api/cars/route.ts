@@ -101,7 +101,57 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  return POST(req);
+  try {
+    const body = await req.json();
+    const { id, ...updates } = body;
+
+    if (!id) {
+      return NextResponse.json({ error: "Car ID is required" }, { status: 400 });
+    }
+
+    const supabase = await createClient();
+    if (!supabase) {
+      return NextResponse.json({ success: true, localOnly: true });
+    }
+
+    const dbUpdates: Record<string, any> = {};
+    if (updates.title) dbUpdates.title = updates.title;
+    if (updates.description) dbUpdates.description = updates.description;
+    if (updates.listingType) dbUpdates.listing_type = updates.listingType;
+    if (updates.price !== undefined) dbUpdates.price = updates.price;
+    if (updates.cautionFee !== undefined) dbUpdates.caution_fee = updates.cautionFee;
+    if (updates.reservationFee !== undefined) dbUpdates.reservation_fee = updates.reservationFee;
+    if (updates.agencyFee !== undefined) dbUpdates.agency_fee = updates.agencyFee;
+    if (updates.inspectionFee !== undefined) dbUpdates.inspection_fee = updates.inspectionFee;
+    if (updates.legalFee !== undefined) dbUpdates.legal_fee = updates.legalFee;
+    if (updates.make) dbUpdates.make = updates.make;
+    if (updates.model) dbUpdates.model = updates.model;
+    if (updates.year !== undefined) dbUpdates.year = updates.year;
+    if (updates.transmission) dbUpdates.transmission = updates.transmission;
+    if (updates.fuelType) dbUpdates.fuel_type = updates.fuelType;
+    if (updates.seats !== undefined) dbUpdates.seats = updates.seats;
+    if (updates.mileage) dbUpdates.mileage = updates.mileage;
+    if (updates.condition) dbUpdates.condition = updates.condition;
+    if (updates.location) dbUpdates.location = updates.location;
+    if (updates.images) dbUpdates.images = updates.images;
+    if (updates.features) dbUpdates.features = updates.features;
+    if (updates.agentId !== undefined) dbUpdates.agent_id = updates.agentId;
+    if (updates.agentPhone !== undefined) dbUpdates.agent_phone = updates.agentPhone;
+    if (updates.youtubeVideoId !== undefined) dbUpdates.youtube_video_id = updates.youtubeVideoId;
+    if (updates.youtubeUrl !== undefined) dbUpdates.youtube_url = updates.youtubeUrl;
+    if (updates.youtubeThumbnail !== undefined) dbUpdates.youtube_thumbnail = updates.youtubeThumbnail;
+    if (updates.featured !== undefined) dbUpdates.featured = updates.featured;
+
+    const { error } = await supabase
+      .from("cars")
+      .update(dbUpdates)
+      .eq("id", String(id));
+
+    if (error) throw error;
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
 }
 
 export async function DELETE(req: Request) {

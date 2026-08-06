@@ -57,6 +57,38 @@ export async function POST(req: Request) {
     const body = await req.json();
     const id = body.id || "agent-" + Math.random().toString(36).substring(2, 9);
 
+    // Check for duplicate email or WhatsApp in database first
+    const supabase = await createClient();
+    if (supabase) {
+      // Check duplicate email
+      const { data: existingEmail } = await supabase
+        .from("agent_profiles")
+        .select("id, name")
+        .eq("email", (body.email || "").trim().toLowerCase())
+        .maybeSingle();
+
+      if (existingEmail) {
+        return NextResponse.json(
+          { success: false, error: `An agent account with this email already exists (${existingEmail.name}). Please sign in instead.` },
+          { status: 409 }
+        );
+      }
+
+      // Check duplicate WhatsApp
+      const { data: existingPhone } = await supabase
+        .from("agent_profiles")
+        .select("id, name")
+        .eq("whatsapp", body.whatsapp || "")
+        .maybeSingle();
+
+      if (existingPhone) {
+        return NextResponse.json(
+          { success: false, error: `This WhatsApp number is already registered to another agent (${existingPhone.name}). Each agent must use a unique phone number.` },
+          { status: 409 }
+        );
+      }
+    }
+
     const newAgent: AgentProfile = {
       id,
       name: body.name,
@@ -75,7 +107,6 @@ export async function POST(req: Request) {
     const updatedMemory = [newAgent, ...currentMemory.filter((a) => a.id !== newAgent.id && a.email !== newAgent.email)];
     setMemoryAgents(updatedMemory);
 
-    const supabase = await createClient();
     if (supabase) {
       const dbPayload = {
         id,

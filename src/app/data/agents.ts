@@ -26,16 +26,5 @@ export const INITIAL_AGENTS: AgentProfile[] = [
     role: "super_admin",
     createdAt: "July 1, 2026",
   },
-  {
-    id: "agent-ehis",
-    name: "Ehis Real Estate & Management Consult",
-    email: "ehis@domosproperties.com",
-    whatsapp: "08012345678",
-    officeAddress: "No. 12 AAU Main Gate Expressway, Ekpoma, Edo State",
-    cacNumber: "RC: 3948120",
-    profileImage: "/images/treasure_hostel.png",
-    status: "approved",
-    role: "agent",
-    createdAt: "July 10, 2026",
-  }
 ];
+
