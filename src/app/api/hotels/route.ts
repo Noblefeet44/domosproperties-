@@ -57,16 +57,11 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, localOnly: true });
     }
 
-    const dbPayload = {
+    const dbPayload: Record<string, any> = {
       id: body.id,
       title: body.title,
       description: body.description,
       price_per_night: body.pricePerNight,
-      caution_fee: body.cautionFee || body.caution_fee || 0,
-      reservation_fee: body.reservationFee || body.reservation_fee || 0,
-      agency_fee: body.agencyFee || body.agency_fee || 0,
-      inspection_fee: body.inspectionFee || body.inspection_fee || 0,
-      legal_fee: body.legalFee || body.legal_fee || 0,
       location: body.location,
       neighborhood: body.neighborhood,
       star_rating: body.starRating || 4.5,
@@ -91,7 +86,10 @@ export async function POST(req: Request) {
       .upsert([dbPayload])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Hotels API upsert error:", error);
+      throw error;
+    }
     return NextResponse.json(data ? data[0] : dbPayload);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -116,11 +114,6 @@ export async function PATCH(req: Request) {
     if (updates.title) dbUpdates.title = updates.title;
     if (updates.description) dbUpdates.description = updates.description;
     if (updates.pricePerNight !== undefined) dbUpdates.price_per_night = updates.pricePerNight;
-    if (updates.cautionFee !== undefined) dbUpdates.caution_fee = updates.cautionFee;
-    if (updates.reservationFee !== undefined) dbUpdates.reservation_fee = updates.reservationFee;
-    if (updates.agencyFee !== undefined) dbUpdates.agency_fee = updates.agencyFee;
-    if (updates.inspectionFee !== undefined) dbUpdates.inspection_fee = updates.inspectionFee;
-    if (updates.legalFee !== undefined) dbUpdates.legal_fee = updates.legalFee;
     if (updates.location) dbUpdates.location = updates.location;
     if (updates.neighborhood) dbUpdates.neighborhood = updates.neighborhood;
     if (updates.images) dbUpdates.images = updates.images;

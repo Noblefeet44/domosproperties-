@@ -55,22 +55,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, localOnly: true });
     }
 
-    const dbPayload = {
+    const dbPayload: Record<string, any> = {
       id: body.id,
       title: body.title,
       description: body.description,
       price: body.price,
-      caution_fee: body.cautionFee || body.caution_fee || 0,
-      reservation_fee: body.reservationFee || body.reservation_fee || 0,
-      agency_fee: body.agencyFee || body.agency_fee || 0,
-      inspection_fee: body.inspectionFee || body.inspection_fee || 0,
-      legal_fee: body.legalFee || body.legal_fee || 0,
-      size: body.size,
-      title_document: body.titleDocument,
+      size: body.size || "1 Plot (600 sqm)",
+      title_document: body.titleDocument || "C of O",
       zoning: body.zoning || "Residential",
       status: body.status || "dry_land",
-      location: body.location,
-      neighborhood: body.neighborhood,
+      location: body.location || "AAU Main Gate Area, Ekpoma",
+      neighborhood: body.neighborhood || "AAU Main Gate",
       images: body.images || [],
       features: body.features || [],
       google_maps_url: body.googleMapsUrl,
@@ -87,7 +82,10 @@ export async function POST(req: Request) {
       .upsert([dbPayload])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Lands API upsert error:", error);
+      throw error;
+    }
     return NextResponse.json(data ? data[0] : dbPayload);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -112,11 +110,6 @@ export async function PATCH(req: Request) {
     if (updates.title) dbUpdates.title = updates.title;
     if (updates.description) dbUpdates.description = updates.description;
     if (updates.price !== undefined) dbUpdates.price = updates.price;
-    if (updates.cautionFee !== undefined) dbUpdates.caution_fee = updates.cautionFee;
-    if (updates.reservationFee !== undefined) dbUpdates.reservation_fee = updates.reservationFee;
-    if (updates.agencyFee !== undefined) dbUpdates.agency_fee = updates.agencyFee;
-    if (updates.inspectionFee !== undefined) dbUpdates.inspection_fee = updates.inspectionFee;
-    if (updates.legalFee !== undefined) dbUpdates.legal_fee = updates.legalFee;
     if (updates.size) dbUpdates.size = updates.size;
     if (updates.titleDocument) dbUpdates.title_document = updates.titleDocument;
     if (updates.zoning) dbUpdates.zoning = updates.zoning;

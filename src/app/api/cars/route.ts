@@ -58,26 +58,21 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, localOnly: true });
     }
 
-    const dbPayload = {
+    const dbPayload: Record<string, any> = {
       id: body.id,
       title: body.title,
       description: body.description,
       listing_type: body.listingType === "sale" ? "sale" : body.listingType || "rent",
       price: body.price,
-      caution_fee: body.cautionFee || body.caution_fee || 0,
-      reservation_fee: body.reservationFee || body.reservation_fee || 0,
-      agency_fee: body.agencyFee || body.agency_fee || 0,
-      inspection_fee: body.inspectionFee || body.inspection_fee || 0,
-      legal_fee: body.legalFee || body.legal_fee || 0,
-      make: body.make,
-      model: body.model,
-      year: body.year,
-      transmission: body.transmission,
+      make: body.make || "Toyota",
+      model: body.model || "Car",
+      year: body.year || 2022,
+      transmission: body.transmission || "automatic",
       fuel_type: body.fuelType || "Petrol",
       seats: body.seats || 5,
       mileage: body.mileage || "Low Mileage",
-      condition: body.condition,
-      location: body.location,
+      condition: body.condition || "foreign_used",
+      location: body.location || "Ekpoma, Edo State",
       images: body.images || [],
       features: body.features || [],
       agent_id: body.agentId || body.agent_id || null,
@@ -88,12 +83,15 @@ export async function POST(req: Request) {
       featured: body.featured || false,
     };
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from("cars")
       .upsert([dbPayload])
       .select();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Cars API upsert error:", error);
+      throw error;
+    }
     return NextResponse.json(data ? data[0] : dbPayload);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -119,11 +117,6 @@ export async function PATCH(req: Request) {
     if (updates.description) dbUpdates.description = updates.description;
     if (updates.listingType) dbUpdates.listing_type = updates.listingType;
     if (updates.price !== undefined) dbUpdates.price = updates.price;
-    if (updates.cautionFee !== undefined) dbUpdates.caution_fee = updates.cautionFee;
-    if (updates.reservationFee !== undefined) dbUpdates.reservation_fee = updates.reservationFee;
-    if (updates.agencyFee !== undefined) dbUpdates.agency_fee = updates.agencyFee;
-    if (updates.inspectionFee !== undefined) dbUpdates.inspection_fee = updates.inspectionFee;
-    if (updates.legalFee !== undefined) dbUpdates.legal_fee = updates.legalFee;
     if (updates.make) dbUpdates.make = updates.make;
     if (updates.model) dbUpdates.model = updates.model;
     if (updates.year !== undefined) dbUpdates.year = updates.year;

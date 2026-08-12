@@ -1594,6 +1594,9 @@ export default function AdminPage() {
                         setHotelAmenities(h.amenities || []);
                         setHotelRooms(h.rooms || []);
                         setUploadedImageUrls(h.images || []);
+                        setYoutubeVideoId(h.youtubeVideoId || "");
+                        setYoutubeUrl(h.youtubeUrl || "");
+                        setYoutubeThumbnail(h.youtubeThumbnail || "");
                         setFormMode("edit");
                       }}
                       className="flex-1 py-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs hover:bg-sky-500/20"
@@ -1792,6 +1795,30 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* YouTube Video Tour Uploader */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  YouTube Hotel Video Tour (Optional)
+                </label>
+                <YouTubeVideoUploader
+                  currentVideoId={youtubeVideoId}
+                  currentVideoUrl={youtubeUrl}
+                  currentThumbnailUrl={youtubeThumbnail}
+                  title={hotelTitle ? `${hotelTitle} - Video Showcase` : "Hotel Video Tour"}
+                  description={hotelDesc || "Official Hotel Video Tour on DomosProperty"}
+                  onUploadSuccess={(result) => {
+                    setYoutubeVideoId(result.videoId);
+                    setYoutubeUrl(result.videoUrl);
+                    setYoutubeThumbnail(result.thumbnailUrl);
+                  }}
+                  onRemoveVideo={() => {
+                    setYoutubeVideoId("");
+                    setYoutubeUrl("");
+                    setYoutubeThumbnail("");
+                  }}
+                />
+              </div>
+
               <ImageUploader
                 images={uploadedImageUrls}
                 onChange={(urls) => setUploadedImageUrls(urls)}
@@ -1856,6 +1883,9 @@ export default function AdminPage() {
                         setCarLocation(c.location);
                         setCarFeatures(c.features || []);
                         setUploadedImageUrls(c.images || []);
+                        setYoutubeVideoId(c.youtubeVideoId || "");
+                        setYoutubeUrl(c.youtubeUrl || "");
+                        setYoutubeThumbnail(c.youtubeThumbnail || "");
                         setFormMode("edit");
                       }}
                       className="flex-1 py-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs hover:bg-sky-500/20"
@@ -1975,6 +2005,30 @@ export default function AdminPage() {
                 </div>
               </div>
 
+              {/* YouTube Video Tour Uploader */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  YouTube Vehicle Video Tour (Optional)
+                </label>
+                <YouTubeVideoUploader
+                  currentVideoId={youtubeVideoId}
+                  currentVideoUrl={youtubeUrl}
+                  currentThumbnailUrl={youtubeThumbnail}
+                  title={carTitle ? `${carTitle} - Video Showcase` : "Vehicle Video Tour"}
+                  description={carDesc || "Official Vehicle Tour on DomosProperty"}
+                  onUploadSuccess={(result) => {
+                    setYoutubeVideoId(result.videoId);
+                    setYoutubeUrl(result.videoUrl);
+                    setYoutubeThumbnail(result.thumbnailUrl);
+                  }}
+                  onRemoveVideo={() => {
+                    setYoutubeVideoId("");
+                    setYoutubeUrl("");
+                    setYoutubeThumbnail("");
+                  }}
+                />
+              </div>
+
               <ImageUploader
                 images={uploadedImageUrls}
                 onChange={(urls) => setUploadedImageUrls(urls)}
@@ -2033,6 +2087,9 @@ export default function AdminPage() {
                         setLandNeighborhood(l.neighborhood);
                         setLandFeatures(l.features || []);
                         setUploadedImageUrls(l.images || []);
+                        setYoutubeVideoId(l.youtubeVideoId || "");
+                        setYoutubeUrl(l.youtubeUrl || "");
+                        setYoutubeThumbnail(l.youtubeThumbnail || "");
                         setFormMode("edit");
                       }}
                       className="flex-1 py-1.5 rounded-lg bg-sky-500/10 text-sky-600 dark:text-sky-400 font-bold text-xs hover:bg-sky-500/20"
@@ -2143,6 +2200,30 @@ export default function AdminPage() {
                     );
                   })}
                 </div>
+              </div>
+
+              {/* YouTube Video Tour Uploader */}
+              <div className="space-y-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block">
+                  YouTube Land Plot Video Tour (Optional)
+                </label>
+                <YouTubeVideoUploader
+                  currentVideoId={youtubeVideoId}
+                  currentVideoUrl={youtubeUrl}
+                  currentThumbnailUrl={youtubeThumbnail}
+                  title={landTitle ? `${landTitle} - Video Tour` : "Land Plot Video Tour"}
+                  description={landDesc || "Official Site Inspection Video Tour on DomosProperty"}
+                  onUploadSuccess={(result) => {
+                    setYoutubeVideoId(result.videoId);
+                    setYoutubeUrl(result.videoUrl);
+                    setYoutubeThumbnail(result.thumbnailUrl);
+                  }}
+                  onRemoveVideo={() => {
+                    setYoutubeVideoId("");
+                    setYoutubeUrl("");
+                    setYoutubeThumbnail("");
+                  }}
+                />
               </div>
 
               <ImageUploader
