@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Car } from "../data/cars";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl, isValidImageUrl, isPlaceholderImage } from "@/lib/youtube";
 
 export const CarDetailsModal: React.FC = () => {
   const { cars, allAgents, selectedCar, setSelectedCar, addBooking } = useApp();
@@ -83,8 +83,11 @@ export const CarDetailsModal: React.FC = () => {
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
             const { imageUrl, hasVideo } = getListingCardMedia(selectedCar, "/images/royal_villa.png");
-            const hasCustomPhotos = selectedCar.images && selectedCar.images.length > 0 && selectedCar.images[0] !== "/images/royal_villa.png" && selectedCar.images[0] !== "/images/ehis_hostel.png";
-            const displayImg = selectedCar.images?.[activeImageIndex] && selectedCar.images[activeImageIndex] !== "/images/royal_villa.png" ? selectedCar.images[activeImageIndex] : imageUrl;
+            const hasCustomPhotos = Boolean(
+              selectedCar.images &&
+              selectedCar.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
+            );
+            const displayImg = selectedCar.images?.[activeImageIndex] && isValidImageUrl(selectedCar.images[activeImageIndex]) && !isPlaceholderImage(selectedCar.images[activeImageIndex]) ? selectedCar.images[activeImageIndex] : imageUrl;
             const showVideo = hasVideo && (!hasCustomPhotos || activeImageIndex === 0);
 
             return (

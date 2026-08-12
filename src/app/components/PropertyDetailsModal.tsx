@@ -5,7 +5,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl, isValidImageUrl, isPlaceholderImage } from "@/lib/youtube";
 
 export const PropertyDetailsModal: React.FC = () => {
   const { properties, allAgents, selectedProperty, setSelectedProperty, addBooking } = useApp();
@@ -123,7 +123,10 @@ export const PropertyDetailsModal: React.FC = () => {
   const directWhatsappUrl = `https://wa.me/234${agentCleanPhone}?text=${prefilledWhatsappMsg}`;
 
   const { imageUrl: modalCardImageUrl, hasVideo: modalCardHasVideo } = getListingCardMedia(selectedProperty || {}, "/images/ehis_hostel.png");
-  const hasCustomPhotos = Boolean(selectedProperty?.images && selectedProperty.images.length > 0 && selectedProperty.images[0] !== "/images/ehis_hostel.png");
+  const hasCustomPhotos = Boolean(
+    selectedProperty?.images &&
+    selectedProperty.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
+  );
   const showVideoShowcase = modalCardHasVideo && (!hasCustomPhotos || selectedImageIdx === 0);
 
   if (!selectedProperty) return null;

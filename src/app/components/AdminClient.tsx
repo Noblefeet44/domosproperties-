@@ -10,6 +10,7 @@ import { LandProperty } from "../data/lands";
 import { AgentProfile } from "../data/agents";
 import { ImageUploader } from "../components/ImageUploader";
 import YouTubeVideoUploader from "./YouTubeVideoUploader";
+import { getListingCardMedia, extractYouTubeVideoId } from "@/lib/youtube";
 
 
 // Client-side canvas image optimizer & downscaler
@@ -82,6 +83,57 @@ export default function AdminPage() {
     updateLand,
     bookings,
   } = useApp();
+
+  const renderSmallAdminMedia = (item: any, defaultIcon: string = "🏠") => {
+    const media = getListingCardMedia(item, "/images/ehis_hostel.png");
+    const videoId = media.videoId || extractYouTubeVideoId(item.youtubeVideoId) || extractYouTubeVideoId(item.youtubeUrl);
+    const thumbUrl = media.imageUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : (item.youtubeThumbnail || "/images/ehis_hostel.png"));
+
+    return (
+      <img
+        src={thumbUrl}
+        alt={item.title}
+        className="w-20 h-20 rounded-xl object-cover"
+        onError={(e) => {
+          const target = e.target as HTMLImageElement;
+          if (videoId && !target.src.includes("hqdefault.jpg")) {
+            target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+          } else {
+            target.src = "/images/ehis_hostel.png";
+          }
+        }}
+      />
+    );
+  };
+
+  const renderAdminCardMedia = (item: any, defaultIcon: string = "🏠") => {
+    const media = getListingCardMedia(item, "/images/ehis_hostel.png");
+    const videoId = media.videoId || extractYouTubeVideoId(item.youtubeVideoId) || extractYouTubeVideoId(item.youtubeUrl);
+    const thumbUrl = media.imageUrl || (videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : (item.youtubeThumbnail || "/images/ehis_hostel.png"));
+
+    return (
+      <div className="relative h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200/50 dark:border-slate-800">
+        <img
+          src={thumbUrl}
+          alt={item.title}
+          className="w-full h-full object-cover"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            if (videoId && !target.src.includes("hqdefault.jpg")) {
+              target.src = `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+            } else {
+              target.src = "/images/ehis_hostel.png";
+            }
+          }}
+        />
+        {media.hasVideo && (
+          <span className="absolute top-2 right-2 px-2 py-0.5 rounded-md bg-rose-600/90 text-white text-[10px] font-black uppercase shadow tracking-wider flex items-center gap-1 border border-rose-400/30 z-10">
+            <span>▶</span> Video Tour
+          </span>
+        )}
+      </div>
+    );
+  };
 
   // Auth Modes & Loading
   const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
@@ -379,7 +431,7 @@ export default function AdminPage() {
     e.preventDefault();
     setFormSubmitting(true);
     try {
-      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
+      const finalImages = uploadedImageUrls;
       const agentPhone = currentAgent?.whatsapp || "07073537007";
 
       if (editingPropId) {
@@ -439,7 +491,7 @@ export default function AdminPage() {
     e.preventDefault();
     setFormSubmitting(true);
     try {
-      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/ehis_hostel.png"];
+      const finalImages = uploadedImageUrls;
       const agentPhone = currentAgent?.whatsapp || "07073537007";
 
       if (editingHotelId) {
@@ -492,7 +544,7 @@ export default function AdminPage() {
     e.preventDefault();
     setFormSubmitting(true);
     try {
-      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/royal_villa.png"];
+      const finalImages = uploadedImageUrls;
       const agentPhone = currentAgent?.whatsapp || "07073537007";
 
       if (editingCarId) {
@@ -552,7 +604,7 @@ export default function AdminPage() {
     e.preventDefault();
     setFormSubmitting(true);
     try {
-      const finalImages = uploadedImageUrls.length > 0 ? uploadedImageUrls : ["/images/treasure_hostel.png"];
+      const finalImages = uploadedImageUrls;
       const agentPhone = currentAgent?.whatsapp || "07073537007";
 
       if (editingLandId) {
@@ -1239,7 +1291,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {agentProps.map((p) => (
                               <div key={p.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex gap-3">
-                                <img src={p.images[0] || "/images/ehis_hostel.png"} alt={p.title} className="w-20 h-20 rounded-xl object-cover" />
+                                {renderSmallAdminMedia(p, "🏢")}
                                 <div className="space-y-0.5 flex-1">
                                   <h5 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">{p.title}</h5>
                                   <p className="text-xs font-bold text-amber-500">₦{p.price.toLocaleString()} / yr</p>
@@ -1260,7 +1312,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {agentHotels.map((h) => (
                               <div key={h.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex gap-3">
-                                <img src={h.images[0] || "/images/ehis_hostel.png"} alt={h.title} className="w-20 h-20 rounded-xl object-cover" />
+                                {renderSmallAdminMedia(h, "🏨")}
                                 <div className="space-y-0.5 flex-1">
                                   <h5 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">{h.title}</h5>
                                   <p className="text-xs font-bold text-amber-500">₦{h.pricePerNight.toLocaleString()} / night</p>
@@ -1281,7 +1333,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {agentCars.map((c) => (
                               <div key={c.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex gap-3">
-                                <img src={c.images[0] || "/images/royal_villa.png"} alt={c.title} className="w-20 h-20 rounded-xl object-cover" />
+                                {renderSmallAdminMedia(c, "🚗")}
                                 <div className="space-y-0.5 flex-1">
                                   <h5 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">{c.title}</h5>
                                   <p className="text-xs font-bold text-amber-500">₦{c.price.toLocaleString()} {c.listingType === 'rent' && '/ day'}</p>
@@ -1302,7 +1354,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                             {agentLands.map((l) => (
                               <div key={l.id} className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 flex gap-3">
-                                <img src={l.images[0] || "/images/treasure_hostel.png"} alt={l.title} className="w-20 h-20 rounded-xl object-cover" />
+                                {renderSmallAdminMedia(l, "📐")}
                                 <div className="space-y-0.5 flex-1">
                                   <h5 className="text-xs font-extrabold text-slate-900 dark:text-white line-clamp-1">{l.title}</h5>
                                   <p className="text-xs font-bold text-amber-500">₦{l.price.toLocaleString()}</p>
@@ -1327,9 +1379,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedProperties.map((p) => (
                 <div key={p.id} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src={p.images?.[0] || "/images/ehis_hostel.png"} alt={p.title} className="w-full h-full object-cover" />
-                  </div>
+                  {renderAdminCardMedia(p, "🏢")}
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white line-clamp-1">{p.title}</h3>
                   {(() => {
                     const totalFees = (p.cautionFee || 0) + (p.reservationFee || 0) + (p.agencyFee || 0) + (p.inspectionFee || 0) + (p.legalFee || 0);
@@ -1572,9 +1622,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedHotels.map((h) => (
                 <div key={h.id} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src={h.images?.[0] || "/images/ehis_hostel.png"} alt={h.title} className="w-full h-full object-cover" />
-                  </div>
+                  {renderAdminCardMedia(h, "🏨")}
                   <h3 className="font-extrabold text-sm text-slate-900 dark:text-white line-clamp-1">{h.title}</h3>
                   <p className="text-xs font-bold text-amber-500">₦{h.pricePerNight.toLocaleString()} / night</p>
                   <p className="text-[11px] text-slate-400">📍 {h.location} • ⭐ {h.starRating}</p>
@@ -1853,9 +1901,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedCars.map((c) => (
                 <div key={c.id} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src={c.images?.[0] || "/images/royal_villa.png"} alt={c.title} className="w-full h-full object-cover" />
-                  </div>
+                  {renderAdminCardMedia(c, "🚗")}
                   <div className="flex items-center justify-between">
                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase text-white ${c.listingType === 'rent' ? 'bg-sky-600' : 'bg-emerald-600'}`}>
                       {c.listingType === 'rent' ? 'Rent / Hire' : 'For Sale'}
@@ -2063,9 +2109,7 @@ export default function AdminPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {displayedLands.map((l) => (
                 <div key={l.id} className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-3">
-                  <div className="h-40 rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
-                    <img src={l.images?.[0] || "/images/treasure_hostel.png"} alt={l.title} className="w-full h-full object-cover" />
-                  </div>
+                  {renderAdminCardMedia(l, "📐")}
                   <div className="flex items-center justify-between">
                     <span className="px-2 py-0.5 rounded bg-amber-500 text-slate-950 text-[10px] font-black">{l.titleDocument}</span>
                     <span className="text-xs font-bold text-slate-400">{l.size}</span>

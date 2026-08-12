@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { LandProperty } from "../data/lands";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl, isValidImageUrl, isPlaceholderImage } from "@/lib/youtube";
 
 export const LandDetailsModal: React.FC = () => {
   const { lands, allAgents, selectedLand, setSelectedLand, addBooking } = useApp();
@@ -79,8 +79,11 @@ export const LandDetailsModal: React.FC = () => {
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
             const { imageUrl, hasVideo } = getListingCardMedia(selectedLand, "/images/treasure_hostel.png");
-            const hasCustomPhotos = selectedLand.images && selectedLand.images.length > 0 && selectedLand.images[0] !== "/images/treasure_hostel.png" && selectedLand.images[0] !== "/images/ehis_hostel.png";
-            const displayImg = selectedLand.images?.[activeImageIndex] && selectedLand.images[activeImageIndex] !== "/images/treasure_hostel.png" ? selectedLand.images[activeImageIndex] : imageUrl;
+            const hasCustomPhotos = Boolean(
+              selectedLand.images &&
+              selectedLand.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
+            );
+            const displayImg = selectedLand.images?.[activeImageIndex] && isValidImageUrl(selectedLand.images[activeImageIndex]) && !isPlaceholderImage(selectedLand.images[activeImageIndex]) ? selectedLand.images[activeImageIndex] : imageUrl;
             const showVideo = hasVideo && (!hasCustomPhotos || activeImageIndex === 0);
 
             return (

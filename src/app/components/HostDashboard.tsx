@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { useApp } from "../context/AppContext";
 import { Property } from "../data/properties";
 import YouTubeVideoUploader from "./YouTubeVideoUploader";
+import { getListingCardMedia } from "@/lib/youtube";
 
 export const HostDashboard: React.FC = () => {
   const { currentAgent, properties, hotels, cars, lands, addProperty, bookings } = useApp();
@@ -407,23 +408,29 @@ export const HostDashboard: React.FC = () => {
           <div className="glass rounded-3xl p-6 border border-stone-200/50 dark:border-zinc-800/50">
             <h2 className="text-base font-bold mb-4">Your Active Apartments</h2>
             <div className="space-y-4 max-h-[450px] overflow-y-auto pr-1">
-              {hostProperties.map((property) => (
-                <div key={property.id} className="flex gap-3.5 border-b border-stone-100 dark:border-zinc-900 pb-3">
-                  <img
-                    src={property.images[0]}
-                    alt={property.title}
-                    className="w-16 h-16 object-cover rounded-xl shrink-0"
-                  />
-                  <div className="overflow-hidden">
-                    <h4 className="text-xs font-bold truncate text-stone-800 dark:text-zinc-200">{property.title}</h4>
-                    <p className="text-[10px] text-stone-400">{property.location}</p>
-                    <div className="flex gap-2.5 mt-1.5">
-                      <span className="text-[10px] font-extrabold text-gold">₦{property.price.toLocaleString()}/night</span>
-                      <span className="text-[10px] text-stone-400">★ {property.rating.toFixed(1)}</span>
+              {hostProperties.map((property) => {
+                const { imageUrl } = getListingCardMedia(property, "/images/ehis_hostel.png");
+                return (
+                  <div key={property.id} className="flex gap-3.5 border-b border-stone-100 dark:border-zinc-900 pb-3">
+                    <img
+                      src={imageUrl}
+                      alt={property.title}
+                      className="w-16 h-16 object-cover rounded-xl shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/images/ehis_hostel.png";
+                      }}
+                    />
+                    <div className="overflow-hidden">
+                      <h4 className="text-xs font-bold truncate text-stone-800 dark:text-zinc-200">{property.title}</h4>
+                      <p className="text-[10px] text-stone-400">{property.location}</p>
+                      <div className="flex gap-2.5 mt-1.5">
+                        <span className="text-[10px] font-extrabold text-gold">₦{property.price.toLocaleString()}/night</span>
+                        <span className="text-[10px] text-stone-400">★ {property.rating.toFixed(1)}</span>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

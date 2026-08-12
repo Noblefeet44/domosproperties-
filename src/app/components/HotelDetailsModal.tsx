@@ -5,7 +5,7 @@ import React, { useState, useEffect } from "react";
 import { useApp } from "../context/AppContext";
 import { Hotel } from "../data/hotels";
 import YouTubePlayer from "./YouTubePlayer";
-import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
+import { getListingCardMedia, isDirectVideoUrl, isValidImageUrl, isPlaceholderImage } from "@/lib/youtube";
 
 export const HotelDetailsModal: React.FC = () => {
   const { hotels, allAgents, selectedHotel, setSelectedHotel, addBooking } = useApp();
@@ -129,8 +129,11 @@ export const HotelDetailsModal: React.FC = () => {
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
             const { imageUrl, hasVideo } = getListingCardMedia(selectedHotel, "/images/ehis_hostel.png");
-            const hasCustomPhotos = selectedHotel.images && selectedHotel.images.length > 0 && selectedHotel.images[0] !== "/images/ehis_hostel.png";
-            const displayImg = activeRoom?.image || (selectedHotel.images?.[activeImageIndex] !== "/images/ehis_hostel.png" ? selectedHotel.images?.[activeImageIndex] : imageUrl);
+            const hasCustomPhotos = Boolean(
+              selectedHotel.images &&
+              selectedHotel.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
+            );
+            const displayImg = activeRoom?.image || (selectedHotel.images?.[activeImageIndex] && isValidImageUrl(selectedHotel.images[activeImageIndex]) && !isPlaceholderImage(selectedHotel.images[activeImageIndex]) ? selectedHotel.images[activeImageIndex] : imageUrl);
             const showVideo = hasVideo && !activeRoom && (!hasCustomPhotos || activeImageIndex === 0);
 
             return (

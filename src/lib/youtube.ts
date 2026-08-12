@@ -76,7 +76,32 @@ const DEFAULT_FALLBACK_IMAGES = new Set([
   "/images/ehis_hostel.png",
   "/images/royal_villa.png",
   "/images/treasure_hostel.png",
+  "/images/maitama.png",
+  "/images/jabi.png",
+  "/images/wuse.png",
+  "/images/asokoro.png",
 ]);
+
+/**
+ * Checks if a string is a valid, non-empty image URL.
+ */
+export function isValidImageUrl(url?: string | null): boolean {
+  if (!url || typeof url !== "string") return false;
+  const trimmed = url.trim();
+  if (trimmed.length === 0) return false;
+  if (trimmed === "null" || trimmed === "undefined" || trimmed === "[object Object]") return false;
+  return true;
+}
+
+/**
+ * Checks if an image URL is a default system placeholder image.
+ */
+export function isPlaceholderImage(url?: string | null): boolean {
+  if (!isValidImageUrl(url)) return true;
+  const trimmed = url!.trim();
+  if (DEFAULT_FALLBACK_IMAGES.has(trimmed)) return true;
+  return false;
+}
 
 interface ListingMediaItem {
   images?: string[];
@@ -96,8 +121,8 @@ export interface CardMediaResult {
 
 /**
  * Determines the primary image to display on a listing card.
- * If a YouTube video or uploaded Telegram video exists and the item has no custom photos (or only default placeholders),
- * it uses the video's thumbnail image or video stream with a video badge/play overlay.
+ * If a YouTube video or uploaded video exists and the item has no custom photos (or only default placeholders),
+ * it uses the video's YouTube thumbnail image or video stream with a video badge/play overlay.
  */
 export function getListingCardMedia(
   item: ListingMediaItem,
@@ -114,9 +139,10 @@ export function getListingCardMedia(
 
   const videoThumbnail = getYouTubeThumbnailUrl(videoId || item.youtubeUrl, item.youtubeThumbnail);
 
-  const images = item.images && item.images.length > 0 ? item.images : [];
-  const firstImage = images[0] || "";
-  const isFirstImagePlaceholder = !firstImage || DEFAULT_FALLBACK_IMAGES.has(firstImage);
+  // Filter images array to valid non-empty URLs
+  const validImages = (item.images || []).filter((img) => isValidImageUrl(img));
+  const firstImage = validImages[0] || "";
+  const isFirstImagePlaceholder = isPlaceholderImage(firstImage);
   const isFirstImageVideo = isDirectVideoUrl(firstImage);
 
   // If first image is a direct video file
@@ -131,21 +157,7 @@ export function getListingCardMedia(
     };
   }
 
-  // If there's a video available, and either no custom images or first image is default fallback
-  if (hasVideo && (videoThumbnail || directVidUrl || firstImage) && (images.length === 0 || isFirstImagePlaceholder)) {
-    const finalMediaUrl = videoThumbnail || directVidUrl || firstImage || defaultFallbackImage;
-    const isVid = isDirectVideoUrl(finalMediaUrl);
-    return {
-      imageUrl: finalMediaUrl,
-      hasVideo: true,
-      isVideoFile: isVid,
-      videoId,
-      youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
-      isYouTubeThumbnail: Boolean(videoThumbnail && finalMediaUrl === videoThumbnail),
-    };
-  }
-
-  // If custom images exist, use first custom image
+  // If custom valid (non-placeholder) photos exist, use first custom photo
   if (firstImage && !isFirstImagePlaceholder) {
     return {
       imageUrl: firstImage,
@@ -157,8 +169,26 @@ export function getListingCardMedia(
     };
   }
 
-  // Fallback to video thumbnail or direct video url if available, else default fallback image
-  const finalImageUrl = videoThumbnail || directVidUrl || firstImage || defaultFallbackImage;
+  // If a video exists (and no custom photos exist), use YouTube video thumbnail or video stream
+  if (hasVideo && (videoThumbnail || directVidUrl)) {
+    const finalMediaUrl = videoThumbnail || directVidUrl || "";
+    const isVid = isDirectVideoUrl(finalMediaUrl);
+    return {
+      imageUrl: finalMediaUrl,
+      hasVideo: true,
+      isVideoFile: isVid,
+      videoId,
+      youtubeUrl: item.youtubeUrl || (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null),
+      isYouTubeThumbnail: Boolean(videoThumbnail && finalMediaUrl === videoThumbnail),
+    };
+  }
+
+  // Fallback to video thumbnail or valid image or guaranteed default fallback path
+  const fallback = isValidImageUrl(defaultFallbackImage) ? defaultFallbackImage : "/images/ehis_hostel.png";
+  const finalImageUrl =
+    videoThumbnail ||
+    (firstImage && !isFirstImagePlaceholder ? firstImage : "") ||
+    fallback;
 
   return {
     imageUrl: finalImageUrl,
