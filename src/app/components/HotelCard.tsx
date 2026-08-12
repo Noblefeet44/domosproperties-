@@ -12,7 +12,7 @@ interface HotelCardProps {
 export const HotelCard: React.FC<HotelCardProps> = ({ hotel }) => {
   const { setSelectedHotel } = useApp();
 
-  const { imageUrl, hasVideo, isVideoFile } = getListingCardMedia(hotel, "/images/ehis_hostel.png");
+  const { imageUrl, hasVideo, isVideoFile, isYouTubeThumbnail } = getListingCardMedia(hotel, "/images/ehis_hostel.png");
   const isVid = isVideoFile || isDirectVideoUrl(imageUrl);
 
   return (
@@ -61,8 +61,8 @@ export const HotelCard: React.FC<HotelCardProps> = ({ hotel }) => {
           </div>
         </div>
 
-        {/* Play Icon Center Overlay on Hover when video exists */}
-        {hasVideo && (
+        {/* Play Icon Center Overlay on Hover (Only for Video-Only listings with YouTube thumbnails) */}
+        {hasVideo && isYouTubeThumbnail && (
           <div className="absolute inset-0 flex items-center justify-center bg-slate-950/30 opacity-80 group-hover:opacity-100 transition-opacity z-10">
             <div className="w-12 h-12 rounded-full bg-rose-600 text-white flex items-center justify-center shadow-xl transform group-hover:scale-110 transition-transform border-2 border-white/80">
               <svg className="w-6 h-6 fill-current translate-x-0.5" viewBox="0 0 24 24">
