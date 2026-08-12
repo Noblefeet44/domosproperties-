@@ -65,6 +65,7 @@ export default function AdminPage() {
     logoutAgent,
     updateAgentStatus,
     updateAgentInfo,
+    deleteAgent,
     properties,
     addProperty,
     deleteProperty,
@@ -1111,6 +1112,16 @@ export default function AdminPage() {
                               🚫 Ban
                             </button>
                           )}
+                          <button
+                            onClick={() => {
+                              if (confirm(`⚠️ Are you sure you want to permanently DELETE agent account "${agent.name}" (${agent.email}) and ALL listings uploaded by this agent?\n\nThis action will delete all properties, hotels, cars, lands, and bookings for this agent and CANNOT be undone.`)) {
+                                deleteAgent(agent.id);
+                              }
+                            }}
+                            className="w-full sm:w-auto px-3 py-2 rounded-xl bg-slate-900 hover:bg-black text-rose-400 border border-rose-500/40 font-extrabold text-xs transition-colors cursor-pointer"
+                          >
+                            🗑️ Delete Account & All Listings
+                          </button>
                         </>
                       )}
                     </div>

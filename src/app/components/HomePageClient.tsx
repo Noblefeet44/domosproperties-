@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Navbar } from "./Navbar";
 import { SearchBar } from "./SearchBar";
 import { PropertyCard } from "./PropertyCard";
@@ -17,6 +17,7 @@ import { NeighborhoodMap } from "./NeighborhoodMap";
 import { AboutUs } from "./AboutUs";
 import { FAQ } from "./FAQ";
 import { useApp } from "../context/AppContext";
+import { getPropertySlug } from "@/lib/slug";
 
 export function HomePageClient() {
   const {
@@ -25,13 +26,54 @@ export function HomePageClient() {
     cars,
     lands,
     activeView,
+    setActiveView,
     searchQuery,
     selectedNeighborhood,
     priceRange,
     guestCount,
+    setSelectedProperty,
+    setSelectedHotel,
+    setSelectedCar,
+    setSelectedLand,
   } = useApp();
 
   const [showMap, setShowMap] = useState(false);
+
+  // Auto-open modal if URL has ?property=... or ?hotel=... etc.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const params = new URLSearchParams(window.location.search);
+    const propId = params.get("property");
+    const hotelId = params.get("hotel");
+    const carId = params.get("car");
+    const landId = params.get("land");
+
+    if (propId && properties.length > 0) {
+      const match = properties.find((p) => p.id === propId || getPropertySlug(p) === propId);
+      if (match) {
+        setActiveView("explore");
+        setSelectedProperty(match);
+      }
+    } else if (hotelId && hotels.length > 0) {
+      const match = hotels.find((h) => h.id === hotelId);
+      if (match) {
+        setActiveView("hotels");
+        setSelectedHotel(match);
+      }
+    } else if (carId && cars.length > 0) {
+      const match = cars.find((c) => c.id === carId);
+      if (match) {
+        setActiveView("cars");
+        setSelectedCar(match);
+      }
+    } else if (landId && lands.length > 0) {
+      const match = lands.find((l) => l.id === landId);
+      if (match) {
+        setActiveView("land");
+        setSelectedLand(match);
+      }
+    }
+  }, [properties, hotels, cars, lands, setActiveView, setSelectedProperty, setSelectedHotel, setSelectedCar, setSelectedLand]);
 
   // 1. Filter Properties (Apartments & Residential)
   const filteredProperties = properties.filter((property) => {

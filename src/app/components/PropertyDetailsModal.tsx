@@ -345,40 +345,53 @@ export const PropertyDetailsModal: React.FC = () => {
                 )}
               </div>
 
-              {/* 4. VERIFIED LISTING AGENT BADGE */}
+              {/* 4. VERIFIED LISTING AGENT BADGE & WHATSAPP ACTION */}
               {listingAgent && (
-                <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={listingAgent.profileImage || "/images/ehis_hostel.png"}
-                      alt={listingAgent.name}
-                      className="w-12 h-12 rounded-xl object-cover border-2 border-amber-500 shadow-sm"
-                    />
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
-                          ✓ Verified Listing Agent
-                        </span>
-                        <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">
-                          {listingAgent.cacNumber}
-                        </span>
+                <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-sky-50/60 dark:from-slate-800/80 dark:to-slate-900 border border-amber-200 dark:border-slate-700 space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <img
+                        src={listingAgent.profileImage || "/images/ehis_hostel.png"}
+                        alt={listingAgent.name}
+                        className="w-12 h-12 rounded-xl object-cover border-2 border-amber-500 shadow-sm"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = "/images/ehis_hostel.png";
+                        }}
+                      />
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] font-black uppercase text-emerald-600 bg-emerald-100 dark:bg-emerald-950 px-2 py-0.5 rounded-md">
+                            ✓ Verified Listing Agent
+                          </span>
+                          <span className="text-xs font-extrabold text-amber-600 dark:text-amber-400">
+                            {listingAgent.cacNumber}
+                          </span>
+                        </div>
+                        <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
+                          {listingAgent.name}
+                        </h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400">📍 {listingAgent.officeAddress}</p>
                       </div>
-                      <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
-                        {listingAgent.name}
-                      </h4>
-                      <p className="text-[11px] text-slate-500">📍 {listingAgent.officeAddress}</p>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <a
+                        href={`tel:${agentPhone}`}
+                        className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer text-center text-xs font-bold"
+                      >
+                        <span>📞</span> Call
+                      </a>
+                      <button
+                        onClick={() => {
+                          setStep("apply");
+                          if (modalContainerRef.current) modalContainerRef.current.scrollTo({ top: 0, behavior: "smooth" });
+                        }}
+                        className="px-4 py-2.5 rounded-xl gold-bg-gradient text-white flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer text-center text-xs font-black"
+                      >
+                        <span>💬 WhatsApp Inquiry Form</span>
+                      </button>
                     </div>
                   </div>
-
-                  <a
-                    href={`tel:${agentPhone}`}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex flex-col items-center justify-center shadow-md transition-all cursor-pointer text-center"
-                  >
-                    <div className="flex items-center gap-1 text-xs font-black">
-                      <span>📞</span> Call Agent
-                    </div>
-                    <span className="text-[11px] font-bold opacity-90">{agentPhone}</span>
-                  </a>
                 </div>
               )}
 

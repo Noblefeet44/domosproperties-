@@ -237,14 +237,17 @@ export const LandDetailsModal: React.FC = () => {
             </div>
           </div>
 
-          {/* 4. VERIFIED LISTING LAND AGENT BADGE (Placed at bottom!) */}
+          {/* 4. VERIFIED LISTING LAND AGENT BADGE */}
           {listingAgent && (
-            <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-slate-800/80 border border-amber-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 to-sky-50/60 dark:from-slate-800/80 dark:to-slate-900 border border-amber-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <img
                   src={listingAgent.profileImage || "/images/treasure_hostel.png"}
                   alt={listingAgent.name}
                   className="w-12 h-12 rounded-xl object-cover border-2 border-amber-500 shadow-sm"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = "/images/treasure_hostel.png";
+                  }}
                 />
                 <div>
                   <div className="flex items-center gap-2">
@@ -258,19 +261,26 @@ export const LandDetailsModal: React.FC = () => {
                   <h4 className="text-sm font-extrabold text-slate-900 dark:text-white mt-0.5">
                     {listingAgent.name}
                   </h4>
-                  <p className="text-[11px] text-slate-500">📍 {listingAgent.officeAddress}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400">📍 {listingAgent.officeAddress}</p>
                 </div>
               </div>
 
-              <a
-                href={`tel:${agentPhone}`}
-                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex flex-col items-center justify-center shadow-md transition-all cursor-pointer text-center"
-              >
-                <div className="flex items-center gap-1 text-xs font-black">
-                  <span>📞</span> Call Agent
-                </div>
-                <span className="text-[11px] font-bold opacity-90">{agentPhone}</span>
-              </a>
+              <div className="flex items-center gap-2">
+                <a
+                  href={`tel:${agentPhone}`}
+                  className="px-3.5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer text-center text-xs font-bold"
+                >
+                  <span>📞 Call</span>
+                </a>
+                <a
+                  href={directWhatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white flex items-center justify-center gap-1.5 shadow-md transition-all cursor-pointer text-center text-xs font-black"
+                >
+                  <span>💬 Direct WhatsApp</span>
+                </a>
+              </div>
             </div>
           )}
 

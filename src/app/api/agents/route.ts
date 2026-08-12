@@ -164,11 +164,60 @@ export async function PATCH(req: Request) {
       if (email !== undefined) dbUpdate.email = email;
       if (officeAddress !== undefined) dbUpdate.office_address = officeAddress;
       if (cacNumber !== undefined) dbUpdate.cac_number = cacNumber;
-      if (profileImage !== undefined) dbUpdate.profile_image = profileImage;
-      if (role !== undefined) dbUpdate.role = role;
-
       const { error } = await supabase.from("agent_profiles").update(dbUpdate).eq("id", id);
       if (error) console.warn("Supabase agent update error:", error.message);
+    }
+
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: Request) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+    const email = searchParams.get("email");
+
+    if (!id && !email) {
+      return NextResponse.json({ error: "Agent ID or Email is required" }, { status: 400 });
+    }
+
+    const currentMemory = getMemoryAgents();
+    const targetAgent = currentMemory.find(
+      (a) => (id && a.id === id) || (email && a.email.toLowerCase() === email.toLowerCase())
+    );
+    const targetId = targetAgent?.id || id;
+    const targetEmail = targetAgent?.email || email;
+
+    // Remove agent from memory
+    setMemoryAgents(
+      currentMemory.filter(
+        (a) =>
+          (!targetId || a.id !== targetId) &&
+          (!targetEmail || a.email.toLowerCase() !== targetEmail.toLowerCase())
+      )
+    );
+
+    const supabase = createPublicClient();
+    if (supabase) {
+      if (targetId) {
+        // Delete all listings uploaded by this agent
+        await supabase.from("properties").delete().eq("agent_id", targetId);
+        await supabase.from("hotels").delete().eq("agent_id", targetId);
+        await supabase.from("cars").delete().eq("agent_id", targetId);
+        await supabase.from("lands").delete().eq("agent_id", targetId);
+        await supabase.from("bookings").delete().eq("agent_id", targetId);
+        await supabase.from("inquiries").delete().eq("agent_id", targetId);
+
+        // Delete agent profile
+        await supabase.from("agent_profiles").delete().eq("id", targetId);
+      }
+
+      if (targetEmail) {
+        await supabase.from("agent_profiles").delete().ilike("email", targetEmail);
+      }
     }
 
     return NextResponse.json({ success: true });

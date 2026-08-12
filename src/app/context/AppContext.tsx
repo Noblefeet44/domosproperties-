@@ -45,6 +45,7 @@ interface AppContextType {
   logoutAgent: () => void;
   updateAgentStatus: (agentId: string, status: 'approved' | 'banned' | 'pending') => Promise<void>;
   updateAgentInfo: (agentId: string, fields: Partial<AgentProfile>) => Promise<void>;
+  deleteAgent: (agentId: string) => Promise<void>;
   refreshAgents: () => Promise<void>;
 
   // Datasets
@@ -235,6 +236,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       await refreshAgents();
     } catch (e) {
       console.warn("API updateAgentInfo error:", e);
+    }
+  };
+
+  const deleteAgent = async (agentId: string) => {
+    const agent = allAgents.find((a) => a.id === agentId);
+    setAllAgents((prev) => prev.filter((a) => a.id !== agentId));
+    setProperties((prev) => prev.filter((p) => p.agentId !== agentId));
+    setHotels((prev) => prev.filter((h) => h.agentId !== agentId));
+    setCars((prev) => prev.filter((c) => c.agentId !== agentId));
+    setLands((prev) => prev.filter((l) => l.agentId !== agentId));
+
+    try {
+      await fetch(`/api/agents?id=${agentId}&email=${encodeURIComponent(agent?.email || "")}`, {
+        method: "DELETE",
+      });
+      await refreshAgents();
+      await refreshProperties();
+      await refreshHotels();
+      await refreshCars();
+      await refreshLands();
+    } catch (e) {
+      console.warn("API deleteAgent error:", e);
     }
   };
 
@@ -698,6 +721,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logoutAgent,
         updateAgentStatus,
         updateAgentInfo,
+        deleteAgent,
         refreshAgents,
         properties,
         hotels,

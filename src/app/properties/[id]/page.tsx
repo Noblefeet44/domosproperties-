@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { Navbar } from "../../components/Navbar";
 import YouTubePlayer from "../../components/YouTubePlayer";
+import { PropertyAgentInquiry } from "../../components/PropertyAgentInquiry";
 import { getAllProperties, getPropertyBySlugOrId } from "@/lib/properties";
 import { getPropertySlug } from "@/lib/slug";
 import { getListingCardMedia, isDirectVideoUrl } from "@/lib/youtube";
@@ -309,63 +310,8 @@ export default async function PropertyDetailPage({ params }: PageProps) {
             </div>
           </div>
 
-          <div className="md:col-span-4">
-            <div className="glass p-6 rounded-2xl border border-stone-200/50 dark:border-zinc-800/50 sticky top-24 space-y-4">
-              <div>
-                <span className="text-[10px] uppercase font-black tracking-wider text-amber-600 dark:text-amber-400 block mb-1">
-                  Annual / Session Rent
-                </span>
-                <p className="text-3xl font-black text-stone-900 dark:text-zinc-50">
-                  ₦{property.price.toLocaleString()} <span className="text-xs font-semibold text-stone-400">/ session</span>
-                </p>
-                {totalFees > 0 && (
-                  <span className="text-xs text-amber-600 dark:text-amber-400 block font-extrabold mt-1">
-                    Total Package with Fees: ₦{totalPackage.toLocaleString()}
-                  </span>
-                )}
-              </div>
-
-              {/* Fee Breakdown */}
-              <div className="space-y-1.5 pt-3 border-t border-stone-100 dark:border-zinc-800 text-xs">
-                {property.legalFee !== undefined && property.legalFee > 0 && (
-                  <div className="flex justify-between text-purple-600 dark:text-purple-400">
-                    <span>📜 Legal Fee:</span>
-                    <span className="font-bold">₦{property.legalFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {property.inspectionFee !== undefined && property.inspectionFee > 0 && (
-                  <div className="flex justify-between text-emerald-600 dark:text-emerald-400">
-                    <span>🔎 Inspection Fee:</span>
-                    <span className="font-bold">₦{property.inspectionFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {property.agencyFee !== undefined && property.agencyFee > 0 && (
-                  <div className="flex justify-between text-amber-600 dark:text-amber-400">
-                    <span>🤝 Agency Fee:</span>
-                    <span className="font-bold">₦{property.agencyFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {property.cautionFee !== undefined && property.cautionFee > 0 && (
-                  <div className="flex justify-between text-sky-600 dark:text-sky-400">
-                    <span>🛡️ Caution Fee:</span>
-                    <span className="font-bold">₦{property.cautionFee.toLocaleString()}</span>
-                  </div>
-                )}
-                {property.reservationFee !== undefined && property.reservationFee > 0 && (
-                  <div className="flex justify-between text-rose-600 dark:text-rose-400">
-                    <span>📌 Reservation Deposit:</span>
-                    <span className="font-bold">₦{property.reservationFee.toLocaleString()}</span>
-                  </div>
-                )}
-              </div>
-
-              <a
-                href={`/?property=${property.id}`}
-                className="block text-center w-full py-3 rounded-xl bg-stone-900 text-stone-50 dark:bg-zinc-50 dark:text-zinc-950 hover:bg-amber-500 hover:text-white font-bold text-xs shadow-md transition-colors"
-              >
-                Make Inquiry
-              </a>
-            </div>
+          <div className="md:col-span-4 space-y-6 sticky top-24 self-start">
+            <PropertyAgentInquiry property={property} />
           </div>
         </div>
 
