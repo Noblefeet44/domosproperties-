@@ -123,11 +123,9 @@ export const PropertyDetailsModal: React.FC = () => {
   const directWhatsappUrl = `https://wa.me/234${agentCleanPhone}?text=${prefilledWhatsappMsg}`;
 
   const { imageUrl: modalCardImageUrl, hasVideo: modalCardHasVideo } = getListingCardMedia(selectedProperty || {}, "/images/ehis_hostel.png");
-  const hasCustomPhotos = Boolean(
-    selectedProperty?.images &&
-    selectedProperty.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
-  );
-  const showVideoShowcase = modalCardHasVideo && (!hasCustomPhotos || selectedImageIdx === 0);
+  const validPhotos = (selectedProperty?.images || []).filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img));
+  const hasCustomPhotos = validPhotos.length > 0;
+  const showVideoShowcase = modalCardHasVideo && !hasCustomPhotos;
 
   if (!selectedProperty) return null;
 
@@ -173,9 +171,9 @@ export const PropertyDetailsModal: React.FC = () => {
                   />
                 ) : (
                   <div className="relative h-64 sm:h-96 w-full rounded-2xl overflow-hidden bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800">
-                    {isDirectVideoUrl(selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl) ? (
+                    {isDirectVideoUrl(validPhotos[selectedImageIdx] || modalCardImageUrl) ? (
                       <video
-                        src={`${selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}#t=0.5`}
+                        src={`${validPhotos[selectedImageIdx] || modalCardImageUrl}#t=0.5`}
                         controls
                         playsInline
                         preload="metadata"
@@ -183,7 +181,7 @@ export const PropertyDetailsModal: React.FC = () => {
                       />
                     ) : (
                       <img
-                        src={selectedProperty.images?.[selectedImageIdx] || modalCardImageUrl}
+                        src={validPhotos[selectedImageIdx] || modalCardImageUrl}
                         alt={selectedProperty.title}
                         className="w-full h-full object-cover transition-all duration-300"
                         onError={(e) => {
@@ -193,9 +191,9 @@ export const PropertyDetailsModal: React.FC = () => {
                     )}
                   </div>
                 )}
-                {hasCustomPhotos && selectedProperty.images.length > 1 && (
+                {hasCustomPhotos && validPhotos.length > 1 && (
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {selectedProperty.images.map((img, idx) => (
+                    {validPhotos.map((img, idx) => (
                       <button
                         key={idx}
                         onClick={() => setSelectedImageIdx(idx)}
@@ -206,6 +204,26 @@ export const PropertyDetailsModal: React.FC = () => {
                         <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
                       </button>
                     ))}
+                  </div>
+                )}
+
+                {/* Video Tour section embedded below when both custom photos & video exist */}
+                {modalCardHasVideo && hasCustomPhotos && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
+                        ▶ Video Tour
+                      </span>
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Official Property Video Showcase
+                      </span>
+                    </div>
+                    <YouTubePlayer
+                      videoId={selectedProperty.youtubeVideoId}
+                      url={selectedProperty.youtubeUrl}
+                      thumbnailUrl={selectedProperty.youtubeThumbnail || modalCardImageUrl}
+                      title={selectedProperty.title}
+                    />
                   </div>
                 )}
               </div>

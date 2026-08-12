@@ -129,12 +129,10 @@ export const HotelDetailsModal: React.FC = () => {
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
             const { imageUrl, hasVideo } = getListingCardMedia(selectedHotel, "/images/ehis_hostel.png");
-            const hasCustomPhotos = Boolean(
-              selectedHotel.images &&
-              selectedHotel.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
-            );
-            const displayImg = activeRoom?.image || (selectedHotel.images?.[activeImageIndex] && isValidImageUrl(selectedHotel.images[activeImageIndex]) && !isPlaceholderImage(selectedHotel.images[activeImageIndex]) ? selectedHotel.images[activeImageIndex] : imageUrl);
-            const showVideo = hasVideo && !activeRoom && (!hasCustomPhotos || activeImageIndex === 0);
+            const validPhotos = (selectedHotel.images || []).filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img));
+            const hasCustomPhotos = validPhotos.length > 0;
+            const displayImg = activeRoom?.image || (validPhotos[activeImageIndex] || imageUrl);
+            const showVideo = hasVideo && !activeRoom && !hasCustomPhotos;
 
             return (
               <div className="space-y-3">
@@ -165,6 +163,42 @@ export const HotelDetailsModal: React.FC = () => {
                         }}
                       />
                     )}
+                  </div>
+                )}
+
+                {hasCustomPhotos && validPhotos.length > 1 && !activeRoom && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {validPhotos.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
+                          activeImageIndex === idx ? "border-amber-500 scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Video Tour section embedded below when both custom photos & video exist */}
+                {hasVideo && hasCustomPhotos && !activeRoom && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
+                        ▶ Video Tour
+                      </span>
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Official Hotel Video Showcase
+                      </span>
+                    </div>
+                    <YouTubePlayer
+                      videoId={selectedHotel.youtubeVideoId}
+                      url={selectedHotel.youtubeUrl}
+                      thumbnailUrl={selectedHotel.youtubeThumbnail || imageUrl}
+                      title={selectedHotel.title}
+                    />
                   </div>
                 )}
               </div>

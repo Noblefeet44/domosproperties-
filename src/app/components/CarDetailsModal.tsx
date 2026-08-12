@@ -83,12 +83,10 @@ export const CarDetailsModal: React.FC = () => {
           {/* 1. Gallery / Video Showcase at top */}
           {(() => {
             const { imageUrl, hasVideo } = getListingCardMedia(selectedCar, "/images/royal_villa.png");
-            const hasCustomPhotos = Boolean(
-              selectedCar.images &&
-              selectedCar.images.filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img)).length > 0
-            );
-            const displayImg = selectedCar.images?.[activeImageIndex] && isValidImageUrl(selectedCar.images[activeImageIndex]) && !isPlaceholderImage(selectedCar.images[activeImageIndex]) ? selectedCar.images[activeImageIndex] : imageUrl;
-            const showVideo = hasVideo && (!hasCustomPhotos || activeImageIndex === 0);
+            const validPhotos = (selectedCar.images || []).filter((img) => isValidImageUrl(img) && !isPlaceholderImage(img));
+            const hasCustomPhotos = validPhotos.length > 0;
+            const displayImg = validPhotos[activeImageIndex] || imageUrl;
+            const showVideo = hasVideo && !hasCustomPhotos;
 
             return (
               <div className="space-y-3">
@@ -119,6 +117,42 @@ export const CarDetailsModal: React.FC = () => {
                         }}
                       />
                     )}
+                  </div>
+                )}
+
+                {hasCustomPhotos && validPhotos.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1">
+                    {validPhotos.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setActiveImageIndex(idx)}
+                        className={`relative w-20 h-14 rounded-xl overflow-hidden border-2 transition-all flex-shrink-0 cursor-pointer ${
+                          activeImageIndex === idx ? "border-amber-500 scale-105 shadow-md" : "border-transparent opacity-60 hover:opacity-100"
+                        }`}
+                      >
+                        <img src={img} alt="Thumbnail" className="w-full h-full object-cover" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Video Tour section embedded below when both custom photos & video exist */}
+                {hasVideo && hasCustomPhotos && (
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="px-2 py-0.5 rounded bg-rose-600 text-white text-[10px] font-black uppercase tracking-wider">
+                        ▶ Video Tour
+                      </span>
+                      <span className="text-xs font-extrabold text-slate-900 dark:text-white">
+                        Official Vehicle Video Showcase
+                      </span>
+                    </div>
+                    <YouTubePlayer
+                      videoId={selectedCar.youtubeVideoId}
+                      url={selectedCar.youtubeUrl}
+                      thumbnailUrl={selectedCar.youtubeThumbnail || imageUrl}
+                      title={selectedCar.title}
+                    />
                   </div>
                 )}
               </div>
